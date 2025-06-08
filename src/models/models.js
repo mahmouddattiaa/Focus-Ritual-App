@@ -40,4 +40,4 @@ const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 const Summary = mongoose.model('Summary', summarySchema);
 
 
-module.exports = { User, UploadedFile, ExtractedText, Flashcard, Summary };
+module.exports = {UploadedFile, ExtractedText, Flashcard, Summary };
