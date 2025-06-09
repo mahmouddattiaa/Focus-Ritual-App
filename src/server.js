@@ -22,12 +22,12 @@ const app = express();
 
 // Configure CORS with specific options
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend URLs
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+    origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend URLs
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 };
 
 // Apply CORS middleware with options
@@ -48,8 +48,8 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-    })
+    console.log('Connected to MongoDB successfully!');
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
