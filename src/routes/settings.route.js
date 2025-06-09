@@ -99,7 +99,7 @@ try{
       );
       if(updatedUser){
         return res.status(200).json({
-            message: 'successfully update bio'
+            message: 'successfully updated bio'
         }
         );
       } else
@@ -136,7 +136,7 @@ router.put('/name', passport.authenticate('jwt', {session: false}), async (req,r
           );
           if(updatedUser){
             return res.status(200).json({
-                message: 'successfully update name'
+                message: 'successfully updated name'
             }
             );
           } else
@@ -171,5 +171,59 @@ router.post('/debug-upload', profileUpload.any(), (req, res) => {
     receivedBody: req.body
   });
 });
+
+router.put('/privacy', passport.authenticate('jwt', {session: false}), async (req, res) => {
+try{
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const userId = req.user._id;
+  const updateFields = {}
+  const { profileVisibility, activityVisibility, allowFriendRequests, showOnlineStatus, usageAnalytics, crashReports } = req.body;
+  if(profileVisibility!==undefined){ updateFields['settings.profileVisibility'] = profileVisibility;}
+  if(activityVisibility!==undefined){ updateFields['settings.activityVisibility'] = activityVisibility;}
+  if(allowFriendRequests!==undefined){ updateFields['settings.allowFriendRequests'] = allowFriendRequests;}
+  if(showOnlineStatus!==undefined){ updateFields['settings.showOnlineStatus'] = showOnlineStatus;}
+  if(usageAnalytics!==undefined){ updateFields['settings.usageAnalytics'] = usageAnalytics;}
+  if(crashReports!==undefined){ updateFields['settings.crashReports'] = crashReports;}
+
+  if(Object.keys(updateFields).length === 0) {
+    return res.status(400).json({
+      message: 'No fields provided to update'
+    });
+  }
+const updatedUser = await User.findByIdAndUpdate(
+            userId,                  
+            { $set : updateFields
+             },  
+            { new: true }             
+          );
+          if(updatedUser){
+            return res.status(200).json({
+                message: 'successfully updated fields',
+                profileVisibility: updatedUser.settings.profileVisibility,
+                activityVisibility: updatedUser.settings.activityVisibility,
+                allowFriendRequests: updatedUser.settings.allowFriendRequests,
+                showOnlineStatus: updatedUser.settings.showOnlineStatus,
+                usageAnalytics: updatedUser.settings.usageAnalytics,
+                crashReports: updatedUser.settings.crashReports
+            }
+            );
+          } else
+          {
+            return res.status(400).json({
+                message: 'failed to update fields'
+            });
+          }
+    } catch(err)
+    {
+        console.log('failed to update fields', err);
+        return res.status(500).json({
+            message: 'server error',
+            error: err.message
+        });
+    }
+
+})
 
 module.exports = router;

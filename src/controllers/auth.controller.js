@@ -94,7 +94,15 @@ exports.getCurrentUser = async(req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 profilePicture: user.profilePicture,
-                bio: user.bio
+                bio: user.bio,
+                settings: {
+                profileVisibility: user.settings.profileVisibility,
+                activityVisibility: user.settings.activityVisibility,
+                allowFriendRequests: user.settings.allowFriendRequests,
+                showOnlineStatus: user.settings.showOnlineStatus,
+                usageAnalytics: user.settings.usageAnalytics,
+                crashReports: user.settings.crashReports
+                }
             }
         });
     } catch (err) {

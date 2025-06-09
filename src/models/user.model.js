@@ -37,7 +37,36 @@ default: null
     bio: {
 type: String,
 default: null
+    },
+    settings: {
+    profileVisibility: {
+        type: String,
+        enum: ['Public', 'Friends Only', 'Private'],
+        default: 'Friends Only'
+    },
+    activityVisibility: {
+        type: String,
+        enum: ['Public', 'Friends Only', 'Private'],
+        default: 'Friends Only'
+    },
+    allowFriendRequests: {
+   type: Boolean,
+   default: true
+    },
+    showOnlineStatus: {
+        type: Boolean,
+        default: true
+    },
+    usageAnalytics:{
+        type: Boolean,
+        default: false
+    },
+    crashReports: {
+        type: Boolean,
+        default: false
     }
+
+}
 },
 {
     timestamps: true
