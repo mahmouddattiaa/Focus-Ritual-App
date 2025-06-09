@@ -68,6 +68,7 @@ exports.login = (req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName
+               
             }
 
         });
@@ -91,7 +92,9 @@ exports.getCurrentUser = async(req, res) => {
                 id: user._id,
                 email: user.email,
                 firstName: user.firstName,
-                lastName: user.lastName
+                lastName: user.lastName,
+                profilePicture: user.profilePicture,
+                bio: user.bio
             }
         });
     } catch (err) {

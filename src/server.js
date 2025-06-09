@@ -10,7 +10,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const authRoutes = require('./routes/auth.routes');
 const configurePassport = require('./config/passport');
 const uploadRoutes = require('./routes/upload');
-
+const settingsRoutes = require('./routes/settings.route');
 // Debug environment variables
 console.log("Environment variables:");
 console.log("PORT:", process.env.PORT);
@@ -26,6 +26,7 @@ configurePassport();
 
 app.use('/api/auth', authRoutes);
 app.use('/api/up', uploadRoutes);
+app.use('/api/update', settingsRoutes);
 
 // Use a fallback for MongoDB URI
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
