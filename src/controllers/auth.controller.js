@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model.js');
-
+const Stats = require('../models/stats.model.js');
+const mongoose = require('mongoose');
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId },
@@ -32,6 +33,10 @@ exports.register = async(req, res) => {
             firstName,
             lastName,
             password
+        });
+        const userId = user._id;
+        await Stats.create({
+            userId: new mongoose.Types.ObjectId(userId)
         });
 
         const token = generateToken(user._id);
