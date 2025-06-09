@@ -47,7 +47,17 @@ exports.register = async(req, res) => {
                 id: user._id,
                 email: user.email,
                 firstName: user.firstName,
-                lastName: user.lastName
+                lastName: user.lastName,
+                profilePicture: user.profilePicture,
+                bio: user.bio,
+                settings: {
+                profileVisibility: user.settings.profileVisibility,
+                activityVisibility: user.settings.activityVisibility,
+                allowFriendRequests: user.settings.allowFriendRequests,
+                showOnlineStatus: user.settings.showOnlineStatus,
+                usageAnalytics: user.settings.usageAnalytics,
+                crashReports: user.settings.crashReports
+                }
             }
         });
     } catch (err) {
@@ -72,7 +82,17 @@ exports.login = (req, res) => {
                 id: user._id,
                 email: user.email,
                 firstName: user.firstName,
-                lastName: user.lastName
+                lastName: user.lastName,
+                profilePicture: user.profilePicture,
+                bio: user.bio,
+                settings: {
+                profileVisibility: user.settings.profileVisibility,
+                activityVisibility: user.settings.activityVisibility,
+                allowFriendRequests: user.settings.allowFriendRequests,
+                showOnlineStatus: user.settings.showOnlineStatus,
+                usageAnalytics: user.settings.usageAnalytics,
+                crashReports: user.settings.crashReports
+                }
                
             }
 
