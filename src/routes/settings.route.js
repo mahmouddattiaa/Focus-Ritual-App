@@ -51,10 +51,10 @@ router.put('/pfp', passport.authenticate('jwt', {session: false}), (req, res, ne
     await s3.upload(params).promise();
     console.log('File uploaded to Wasabi');
 
-    const imageUrl = `https://${bucket}.s3.us-east-1.wasabisys.com/${key}`;
+   
     const updatedUser = await User.findByIdAndUpdate(
         userId,                  
-        { profilePicture: imageUrl },  
+        { profilePicture: key },  
         { new: true }             
       );
       
@@ -71,10 +71,11 @@ router.put('/pfp', passport.authenticate('jwt', {session: false}), (req, res, ne
           message: 'failed to update user!'
       });
     } else {
-      return res.status(200).json({
-          message: 'updated successfully',
-          profilePicture: imageUrl
-      });
+      const downloadUrl = getProfilePictureDownloadUrl(updatedUser.profilePicture);
+return res.status(200).json({
+    message: 'updated successfully',
+    profilePicture: downloadUrl
+});
     }
   } catch(err) {
     console.log('error updating pfp: ', err);
@@ -84,6 +85,15 @@ router.put('/pfp', passport.authenticate('jwt', {session: false}), (req, res, ne
     });
   }
 });
+function getProfilePictureDownloadUrl(key) {
+  if (!key) return null;
+  const params = {
+    Bucket: bucket,
+    Key: key,
+    Expires: 60 * 60 * 24 // 1 day in seconds
+  };
+  return s3.getSignedUrl('getObject', params);
+}
 
 router.put('/bio', passport.authenticate('jwt', {session: false}), async (req,res) =>{
 try{

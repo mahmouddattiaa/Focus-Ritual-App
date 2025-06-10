@@ -7,6 +7,16 @@ const fs = require('fs').promises;
 const passport = require('passport');
 const path = require('path');
 
+const getFileDownloadUrl = (key) => {
+  if (!key) return null;
+  const params = {
+    Bucket: bucket,
+    Key: key,
+    Expires: 60 * 60 * 24 // 1 day in seconds
+  };
+  return s3.getSignedUrl('getObject', params);
+};
+
 router.post('/upload', passport.authenticate('jwt', {session: false}), upload.single('file'), async (req, res) => {
   try {
     if (!req.user) {
@@ -40,11 +50,11 @@ router.post('/upload', passport.authenticate('jwt', {session: false}), upload.si
       await s3.upload(params).promise();
       console.log('File uploaded to Wasabi');
 
-      const filePath = `https://${bucket}.s3.us-east-1.wasabisys.com/${key}`;
+      // Store only the S3 key in the database
       const uploadedFile = new UploadedFile({
         user_id: userId,
         file_name: file.originalname,
-        file_path: filePath
+        file_path: key // store the S3 key, not the public URL
       });
       await uploadedFile.save();
       console.log('File metadata saved to database');
@@ -57,7 +67,15 @@ router.post('/upload', passport.authenticate('jwt', {session: false}), upload.si
         console.error('Warning: Could not delete temporary file:', unlinkError);
       }
 
-      res.json({ message: 'File uploaded successfully', file: uploadedFile });
+      // Return the pre-signed download URL
+      const downloadUrl = getFileDownloadUrl(key);
+      res.json({ message: 'File uploaded successfully', file: {
+        _id: uploadedFile._id,
+        user_id: uploadedFile.user_id,
+        file_name: uploadedFile.file_name,
+        file_path: uploadedFile.file_path,
+        downloadUrl
+      }});
     } catch (fileError) {
       console.error('File operation error:', fileError);
       res.status(500).json({ 
@@ -136,7 +154,15 @@ router.get('/files', passport.authenticate('jwt', {session: false}), async (req,
   try {
     const userId = req.user._id;
     const files = await UploadedFile.find({ user_id: userId });
-    res.json(files);
+    // Attach pre-signed download URLs
+    const filesWithUrls = files.map(file => ({
+      _id: file._id,
+      user_id: file.user_id,
+      file_name: file.file_name,
+      file_path: file.file_path,
+      downloadUrl: getFileDownloadUrl(file.file_path)
+    }));
+    res.json(filesWithUrls);
   } catch (err) {
     console.error('Error fetching files:', err);
     res.status(500).json({ error: 'Failed to fetch files' });

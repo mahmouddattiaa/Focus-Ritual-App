@@ -2,6 +2,17 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model.js');
 const Stats = require('../models/stats.model.js');
 const mongoose = require('mongoose');
+const { s3, bucket } = require('../config/wasabi');
+
+const getProfilePictureDownloadUrl = (key) => {
+    if (!key) return null;
+    const params = {
+        Bucket: bucket,
+        Key: key,
+        Expires: 60 * 60 * 24 // 1 day in seconds
+    };
+    return s3.getSignedUrl('getObject', params);
+};
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId },
@@ -48,7 +59,7 @@ exports.register = async(req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: user.profilePicture,
+                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
                 profileVisibility: user.settings.profileVisibility,
@@ -83,7 +94,7 @@ exports.login = (req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: user.profilePicture,
+                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
                 profileVisibility: user.settings.profileVisibility,
@@ -118,7 +129,7 @@ exports.getCurrentUser = async(req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: user.profilePicture,
+                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
                 profileVisibility: user.settings.profileVisibility,
