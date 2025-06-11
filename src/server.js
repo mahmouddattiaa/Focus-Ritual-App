@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/upload');
 const settingsRoutes = require('./routes/settings.route');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const libraryRoutes = require('./routes/library.routes');
+const statsRoutes = require('./routes/stats.routes');
 
 // Debug environment variables
 console.log("Environment variables:");
@@ -24,7 +25,7 @@ const app = express();
 
 // Configure CORS with specific options
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend URLs
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'], // Add your frontend URLs
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/update', settingsRoutes);
 app.use('/api/stats', dashboardRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/api/tasks', statsRoutes);
 
 // Mount upload routes at both /api/up and /up for compatibility
 app.use('/api/up', uploadRoutes);
@@ -55,25 +57,29 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-        console.log("Available routes:");
-        console.log("  POST /api/auth/login");
-        console.log("  POST /api/auth/register");
-        console.log("  GET  /api/auth/me");
-        console.log("  PUT  /api/update/name");
-        console.log("  PUT  /api/update/bio");
-        console.log("  PUT  /api/update/pfp");
-        console.log("  PUT  /api/update/privacy");
-        console.log("  GET  /api/stats/get");
-        console.log("  GET  /api/library");
-        console.log("  GET  /api/library/folder/:folderId");
-        console.log("  GET  /api/library/path");
-        console.log("  POST /api/library/folder");
-        console.log("  POST /up/upload");
-        console.log("  GET  /up/file/:id");
-        console.log("  DELETE /api/library/file/:fileId");
-        console.log("  DELETE /api/library/folder/:folderId");
-    })
+    console.log('Connected to MongoDB successfully!');
+    console.log("Available routes:");
+    console.log("  POST /api/auth/login");
+    console.log("  POST /api/auth/register");
+    console.log("  GET  /api/auth/me");
+    console.log("  PUT  /api/update/name");
+    console.log("  PUT  /api/update/bio");
+    console.log("  PUT  /api/update/pfp");
+    console.log("  PUT  /api/update/privacy");
+    console.log("  GET  /api/stats/get");
+    console.log("  GET  /api/tasks/getTasks");
+    console.log("  POST /api/tasks/addTask");
+    console.log("  POST /api/tasks/updateTask");
+    console.log("  POST /api/tasks/removeTask");
+    console.log("  GET  /api/library");
+    console.log("  GET  /api/library/folder/:folderId");
+    console.log("  GET  /api/library/path");
+    console.log("  POST /api/library/folder");
+    console.log("  POST /up/upload");
+    console.log("  GET  /up/file/:id");
+    console.log("  DELETE /api/library/file/:fileId");
+    console.log("  DELETE /api/library/folder/:folderId");
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);

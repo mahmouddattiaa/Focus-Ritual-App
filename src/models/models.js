@@ -56,6 +56,53 @@ const libraryFileSchema = new mongoose.Schema({
     updated_at: { type: Date, default: Date.now }
 });
 
+const taskSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    description: { type: String },
+    status: {
+        type: { type: String, enum: ['todo', 'inProgress', 'completed'], default: 'todo' },
+        label: { type: String, default: 'To Do' },
+        color: { type: String, default: '#6B7280' }
+    },
+    priority: {
+        level: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
+        color: { type: String, default: '#F59E0B' }
+    },
+    urgency: {
+        level: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
+        color: { type: String, default: '#F59E0B' }
+    },
+    category: { type: String, default: 'General' },
+    tags: [String],
+    dueDate: { type: Date },
+    estimatedTime: { type: Number }, // in minutes
+    subtasks: [{
+        id: { type: String, required: true },
+        title: { type: String, required: true },
+        completed: { type: Boolean, default: false }
+    }],
+    dependencies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
+    completedAt: { type: Date },
+}, { timestamps: true });
+
+const habitSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    description: { type: String },
+    frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly'], default: 'Daily' },
+    category: { type: String, default: 'General' },
+    targetCount: { type: Number, default: 1 },
+    priority: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastCompleted: { type: Date },
+    completions: [{
+        date: { type: Date, required: true },
+        count: { type: Number, default: 1 }
+    }],
+}, { timestamps: true });
+
 
 const UploadedFile = mongoose.model('UploadedFile', uploadedFileSchema);
 const ExtractedText = mongoose.model('ExtractedText', extractedTextSchema);
@@ -63,6 +110,8 @@ const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 const Summary = mongoose.model('Summary', summarySchema);
 const LibraryFolder = mongoose.model('LibraryFolder', libraryFolderSchema);
 const LibraryFile = mongoose.model('LibraryFile', libraryFileSchema);
+const Task = mongoose.model('Task', taskSchema);
+const Habit = mongoose.model('Habit', habitSchema);
 
 
-module.exports = { UploadedFile, ExtractedText, Flashcard, Summary, LibraryFolder, LibraryFile };
+module.exports = { UploadedFile, ExtractedText, Flashcard, Summary, LibraryFolder, LibraryFile, Task, Habit };
