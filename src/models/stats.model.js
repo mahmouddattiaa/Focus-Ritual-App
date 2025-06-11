@@ -6,65 +6,69 @@ const StatsSchema = new mongoose.Schema({
         ref: 'User',
         required: true,
         index: true
-      },
-focusSessions:{
-    type:Number,
-    default: 0
-},
-focusTime: {
-    type:Number,
-    default: 0
-},
-tasksCompleted: {
-    totalTasks: {
+    },
+    focusSessions: {
         type: Number,
         default: 0
     },
-    totalCompleted: {
+    focusTime: {
         type: Number,
         default: 0
-    }
-},
-habitStreak: {
-    type: Number,
-    default: 0
-},
-productivityScore: {
-    type: Number,
-    default: 0
-},
-level: {
-    type: Number,
-    default: 1
-},
-lastActiveDate: {
-    type: Date,
-    default: null
-},
-dailyActivity: {
-    type: Map,
-    of: {
-        focusSessions:{
-            type:Number,
+    },
+    tasksCompleted: {
+        totalTasks: {
+            type: Number,
             default: 0
         },
-        focusTime: {
-            type:Number,
-            default: 0
-        },
-        tasksCompleted: {
+        totalCompleted: {
             type: Number,
             default: 0
         }
     },
-    default: new Map()
-}
+    habitStreak: {
+        type: Number,
+        default: 0
+    },
+    productivityScore: {
+        type: Number,
+        default: 0
+    },
+    level: {
+        type: Number,
+        default: 1
+    },
+    totalDistractions: {
+        type: Number,
+        default: 0
+    },
+    lastActiveDate: {
+        type: Date,
+        default: null
+    },
+    dailyActivity: {
+        type: Map,
+        of: {
+            focusSessions: {
+                type: Number,
+                default: 0
+            },
+            focusTime: {
+                type: Number,
+                default: 0
+            },
+            tasksCompleted: {
+                type: Number,
+                default: 0
+            }
+        },
+        default: new Map()
+    }
 
 
 },
-{
-    timestamps: true
-}
+    {
+        timestamps: true
+    }
 );
 
 

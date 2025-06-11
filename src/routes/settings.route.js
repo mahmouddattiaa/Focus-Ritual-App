@@ -7,49 +7,49 @@ const upload = require('../middleware/upload'); // For PDF uploads
 const profileUpload = require('../middleware/profileUpload'); // For image uploads
 const User = require('../models/user.model.js');
 
-router.put('/pfp', passport.authenticate('jwt', {session: false}), (req, res, next) => {
-  // Log before multer to see the raw request
-  console.log('Headers:', req.headers);
-  console.log('Content-Type:', req.headers['content-type']);
-  next();
+router.put('/pfp', passport.authenticate('jwt', { session: false }), (req, res, next) => {
+    // Log before multer to see the raw request
+    console.log('Headers:', req.headers);
+    console.log('Content-Type:', req.headers['content-type']);
+    next();
 }, profileUpload.any(), async (req, res) => {
-  
-  console.log('Files received:', req.files);
-  console.log('Body:', req.body);
-  
-  if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  
-  const userId = req.user._id;
-  
-  // Check if any files were uploaded
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  
-  // Use the first file
-  const file = req.files[0];
-  console.log('Processing file:', file.originalname, file.mimetype, file.size);
-  
-  try {
-    // Verify the file exists
-    await fs.access(file.path);
-    console.log('File exists and is accessible');
-    
-    const fileContent = await fs.readFile(file.path);
-    console.log('File read successfully, size:', fileContent.length);
-    
-    const key = `profile-pictures/${userId}/${file.filename}`; // Changed the folder name
-    const params = {
-      Bucket: bucket,
-      Key: key,
-      Body: fileContent,
-      ContentType: file.mimetype
-    };
 
-    await s3.upload(params).promise();
-    console.log('File uploaded to Wasabi');
+    console.log('Files received:', req.files);
+    console.log('Body:', req.body);
+
+    if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const userId = req.user._id;
+
+    // Check if any files were uploaded
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Use the first file
+    const file = req.files[0];
+    console.log('Processing file:', file.originalname, file.mimetype, file.size);
+
+    try {
+        // Verify the file exists
+        await fs.access(file.path);
+        console.log('File exists and is accessible');
+
+        const fileContent = await fs.readFile(file.path);
+        console.log('File read successfully, size:', fileContent.length);
+
+        const key = `profile-pictures/${userId}/${file.filename}`; // Changed the folder name
+        const params = {
+            Bucket: bucket,
+            Key: key,
+            Body: fileContent,
+            ContentType: file.mimetype
+        };
+
+        await s3.upload(params).promise();
+        console.log('File uploaded to Wasabi');
 
    
     const updatedUser = await User.findByIdAndUpdate(
@@ -95,68 +95,59 @@ function getProfilePictureDownloadUrl(key) {
   return s3.getSignedUrl('getObject', params);
 }
 
-router.put('/bio', passport.authenticate('jwt', {session: false}), async (req,res) =>{
-try{
-    if (!req.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      const userId = req.user._id;
-      const bio = req.body.bio;
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,                  
-        { bio: bio },  
-        { new: true }             
-      );
-      if(updatedUser){
-        return res.status(200).json({
-            message: 'successfully updated bio'
+router.put('/bio', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
         }
+        const userId = req.user._id;
+        const bio = req.body.bio;
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, { bio: bio }, { new: true }
         );
-      } else
-      {
-        return res.status(400).json({
-            message: 'failed to update bio'
+        if (updatedUser) {
+            return res.status(200).json({
+                message: 'successfully updated bio'
+            });
+        } else {
+            return res.status(400).json({
+                message: 'failed to update bio'
+            });
+        }
+    } catch (err) {
+        console.log('failed to update bio', err);
+        return res.status(500).json({
+            message: 'server error',
+            error: err.message
         });
-      }
-} catch(err)
-{
-    console.log('failed to update bio', err);
-    return res.status(500).json({
-        message: 'server error',
-        error: err.message
-    });
-}
+    }
 
 });
 
-router.put('/name', passport.authenticate('jwt', {session: false}), async (req,res) =>{
-    try{
+router.put('/name', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
-          }
-          const userId = req.user._id;
-          const {firstName, lastName} = req.body;
-        
-          const updatedUser = await User.findByIdAndUpdate(
-            userId,                  
-            { firstName: firstName,
-                lastName: lastName
-             },  
-            { new: true }             
-          );
-          if(updatedUser){
+        }
+        const userId = req.user._id;
+        const { firstName, lastName } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, {
+            firstName: firstName,
+            lastName: lastName
+        }, { new: true }
+        );
+        if (updatedUser) {
             return res.status(200).json({
                 message: 'successfully updated name'
-            }
-            );
-          } else
-          {
+            });
+        } else {
             return res.status(400).json({
                 message: 'failed to update name'
             });
-          }
-    } catch(err)
-    {
+        }
+    } catch (err) {
         console.log('failed to update name', err);
         return res.status(500).json({
             message: 'server error',
@@ -166,49 +157,48 @@ router.put('/name', passport.authenticate('jwt', {session: false}), async (req,r
 });
 
 router.post('/debug-upload', profileUpload.any(), (req, res) => {
-  console.log('DEBUG - Headers:', req.headers);
-  console.log('DEBUG - Body:', req.body);
-  console.log('DEBUG - Files:', req.files);
-  
-  res.json({
-    message: 'Debug information logged',
-    receivedFiles: req.files ? req.files.map(f => ({
-      fieldname: f.fieldname,
-      originalname: f.originalname,
-      mimetype: f.mimetype,
-      size: f.size
-    })) : [],
-    receivedBody: req.body
-  });
+    console.log('DEBUG - Headers:', req.headers);
+    console.log('DEBUG - Body:', req.body);
+    console.log('DEBUG - Files:', req.files);
+
+    res.json({
+        message: 'Debug information logged',
+        receivedFiles: req.files ? req.files.map(f => ({
+            fieldname: f.fieldname,
+            originalname: f.originalname,
+            mimetype: f.mimetype,
+            size: f.size
+        })) : [],
+        receivedBody: req.body
+    });
 });
 
-router.put('/privacy', passport.authenticate('jwt', {session: false}), async (req, res) => {
-try{
-  if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const userId = req.user._id;
-  const updateFields = {}
-  const { profileVisibility, activityVisibility, allowFriendRequests, showOnlineStatus, usageAnalytics, crashReports } = req.body;
-  if(profileVisibility!==undefined){ updateFields['settings.profileVisibility'] = profileVisibility;}
-  if(activityVisibility!==undefined){ updateFields['settings.activityVisibility'] = activityVisibility;}
-  if(allowFriendRequests!==undefined){ updateFields['settings.allowFriendRequests'] = allowFriendRequests;}
-  if(showOnlineStatus!==undefined){ updateFields['settings.showOnlineStatus'] = showOnlineStatus;}
-  if(usageAnalytics!==undefined){ updateFields['settings.usageAnalytics'] = usageAnalytics;}
-  if(crashReports!==undefined){ updateFields['settings.crashReports'] = crashReports;}
+router.put('/privacy', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const userId = req.user._id;
+        const updateFields = {}
+        const { profileVisibility, activityVisibility, allowFriendRequests, showOnlineStatus, usageAnalytics, crashReports } = req.body;
+        if (profileVisibility !== undefined) { updateFields['settings.profileVisibility'] = profileVisibility; }
+        if (activityVisibility !== undefined) { updateFields['settings.activityVisibility'] = activityVisibility; }
+        if (allowFriendRequests !== undefined) { updateFields['settings.allowFriendRequests'] = allowFriendRequests; }
+        if (showOnlineStatus !== undefined) { updateFields['settings.showOnlineStatus'] = showOnlineStatus; }
+        if (usageAnalytics !== undefined) { updateFields['settings.usageAnalytics'] = usageAnalytics; }
+        if (crashReports !== undefined) { updateFields['settings.crashReports'] = crashReports; }
 
-  if(Object.keys(updateFields).length === 0) {
-    return res.status(400).json({
-      message: 'No fields provided to update'
-    });
-  }
-const updatedUser = await User.findByIdAndUpdate(
-            userId,                  
-            { $set : updateFields
-             },  
-            { new: true }             
-          );
-          if(updatedUser){
+        if (Object.keys(updateFields).length === 0) {
+            return res.status(400).json({
+                message: 'No fields provided to update'
+            });
+        }
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, {
+            $set: updateFields
+        }, { new: true }
+        );
+        if (updatedUser) {
             return res.status(200).json({
                 message: 'successfully updated fields',
                 profileVisibility: updatedUser.settings.profileVisibility,
@@ -217,16 +207,13 @@ const updatedUser = await User.findByIdAndUpdate(
                 showOnlineStatus: updatedUser.settings.showOnlineStatus,
                 usageAnalytics: updatedUser.settings.usageAnalytics,
                 crashReports: updatedUser.settings.crashReports
-            }
-            );
-          } else
-          {
+            });
+        } else {
             return res.status(400).json({
                 message: 'failed to update fields'
             });
-          }
-    } catch(err)
-    {
+        }
+    } catch (err) {
         console.log('failed to update fields', err);
         return res.status(500).json({
             message: 'server error',

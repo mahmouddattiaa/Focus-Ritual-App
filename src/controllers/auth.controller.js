@@ -17,12 +17,12 @@ const getProfilePictureDownloadUrl = (key) => {
 const generateToken = (userId) => {
     return jwt.sign({ id: userId },
         process.env.JWT_SECRET || 'your_jwt_secret', {
-            expiresIn: '1d'
-        }
+        expiresIn: '1d'
+    }
     );
 };
 
-exports.register = async(req, res) => {
+exports.register = async (req, res) => {
     try {
         const { email, firstName, lastName, password } = req.body;
         if (!email || !firstName || !lastName || !password) {
@@ -62,12 +62,12 @@ exports.register = async(req, res) => {
                 profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
-                profileVisibility: user.settings.profileVisibility,
-                activityVisibility: user.settings.activityVisibility,
-                allowFriendRequests: user.settings.allowFriendRequests,
-                showOnlineStatus: user.settings.showOnlineStatus,
-                usageAnalytics: user.settings.usageAnalytics,
-                crashReports: user.settings.crashReports
+                    profileVisibility: user.settings.profileVisibility,
+                    activityVisibility: user.settings.activityVisibility,
+                    allowFriendRequests: user.settings.allowFriendRequests,
+                    showOnlineStatus: user.settings.showOnlineStatus,
+                    usageAnalytics: user.settings.usageAnalytics,
+                    crashReports: user.settings.crashReports
                 }
             }
         });
@@ -97,14 +97,14 @@ exports.login = (req, res) => {
                 profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
-                profileVisibility: user.settings.profileVisibility,
-                activityVisibility: user.settings.activityVisibility,
-                allowFriendRequests: user.settings.allowFriendRequests,
-                showOnlineStatus: user.settings.showOnlineStatus,
-                usageAnalytics: user.settings.usageAnalytics,
-                crashReports: user.settings.crashReports
+                    profileVisibility: user.settings.profileVisibility,
+                    activityVisibility: user.settings.activityVisibility,
+                    allowFriendRequests: user.settings.allowFriendRequests,
+                    showOnlineStatus: user.settings.showOnlineStatus,
+                    usageAnalytics: user.settings.usageAnalytics,
+                    crashReports: user.settings.crashReports
                 }
-               
+
             }
 
         });
@@ -119,7 +119,7 @@ exports.login = (req, res) => {
     }
 };
 
-exports.getCurrentUser = async(req, res) => {
+exports.getCurrentUser = async (req, res) => {
     try {
         const user = req.user;
         res.status(200).json({
@@ -132,12 +132,12 @@ exports.getCurrentUser = async(req, res) => {
                 profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
                 bio: user.bio,
                 settings: {
-                profileVisibility: user.settings.profileVisibility,
-                activityVisibility: user.settings.activityVisibility,
-                allowFriendRequests: user.settings.allowFriendRequests,
-                showOnlineStatus: user.settings.showOnlineStatus,
-                usageAnalytics: user.settings.usageAnalytics,
-                crashReports: user.settings.crashReports
+                    profileVisibility: user.settings.profileVisibility,
+                    activityVisibility: user.settings.activityVisibility,
+                    allowFriendRequests: user.settings.allowFriendRequests,
+                    showOnlineStatus: user.settings.showOnlineStatus,
+                    usageAnalytics: user.settings.usageAnalytics,
+                    crashReports: user.settings.crashReports
                 }
             }
         });

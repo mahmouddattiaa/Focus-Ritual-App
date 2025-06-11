@@ -1,93 +1,93 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema ({
+const UserSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'please provide'],
         unique: true,
         match: [
-            /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,  
+            /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/,
             'Please provide a valid email'
-          ],
-          lowercase: true
+        ],
+        lowercase: true
     },
     firstName: {
         type: String,
-        required :  [true, 'please provide'],
+        required: [true, 'please provide'],
         trim: true
 
 
     },
     lastName: {
         type: String,
-        required :  [true, 'please provide'],
+        required: [true, 'please provide'],
         trim: true
     },
-    password : {
+    password: {
         type: String,
-    required: [true, 'Please provide a password'],
-    minlength: [6, 'Password must be at least 6 characters long'],
-    select: false
+        required: [true, 'Please provide a password'],
+        minlength: [6, 'Password must be at least 6 characters long'],
+        select: false
     },
     profilePicture: {
-type: String,
-default: null
+        type: String,
+        default: null
     },
     bio: {
-type: String,
-default: null
+        type: String,
+        default: null
     },
     settings: {
-    profileVisibility: {
-        type: String,
-        enum: ['Public', 'Friends Only', 'Private'],
-        default: 'Friends Only'
-    },
-    activityVisibility: {
-        type: String,
-        enum: ['Public', 'Friends Only', 'Private'],
-        default: 'Friends Only'
-    },
-    allowFriendRequests: {
-   type: Boolean,
-   default: true
-    },
-    showOnlineStatus: {
-        type: Boolean,
-        default: true
-    },
-    usageAnalytics:{
-        type: Boolean,
-        default: false
-    },
-    crashReports: {
-        type: Boolean,
-        default: false
+        profileVisibility: {
+            type: String,
+            enum: ['Public', 'Friends Only', 'Private'],
+            default: 'Friends Only'
+        },
+        activityVisibility: {
+            type: String,
+            enum: ['Public', 'Friends Only', 'Private'],
+            default: 'Friends Only'
+        },
+        allowFriendRequests: {
+            type: Boolean,
+            default: true
+        },
+        showOnlineStatus: {
+            type: Boolean,
+            default: true
+        },
+        usageAnalytics: {
+            type: Boolean,
+            default: false
+        },
+        crashReports: {
+            type: Boolean,
+            default: false
+        }
+
     }
-
-}
 },
-{
-    timestamps: true
-});
+    {
+        timestamps: true
+    });
 
-UserSchema.pre('save', async function(next) {
-if(!this.isModified('password')) return next();
+UserSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
 
-try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-}
-catch(error){
-    next(error);
-}
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
 }
 
 );
 
-UserSchema.methods.comparePassword = async function(candidatePassword) {
+UserSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
