@@ -55,25 +55,29 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-        console.log("Available routes:");
-        console.log("  POST /api/auth/login");
-        console.log("  POST /api/auth/register");
-        console.log("  GET  /api/auth/me");
-        console.log("  PUT  /api/update/name");
-        console.log("  PUT  /api/update/bio");
-        console.log("  PUT  /api/update/pfp");
-        console.log("  PUT  /api/update/privacy");
-        console.log("  GET  /api/stats/get");
-        console.log("  GET  /api/library");
-        console.log("  GET  /api/library/folder/:folderId");
-        console.log("  GET  /api/library/path");
-        console.log("  POST /api/library/folder");
-        console.log("  POST /up/upload");
-        console.log("  GET  /up/file/:id");
-        console.log("  DELETE /api/library/file/:fileId");
-        console.log("  DELETE /api/library/folder/:folderId");
-    })
+    console.log('Connected to MongoDB successfully!');
+    console.log("Available routes:");
+    console.log("  POST /api/auth/login");
+    console.log("  POST /api/auth/register");
+    console.log("  GET  /api/auth/me");
+    console.log("  PUT  /api/update/name");
+    console.log("  PUT  /api/update/bio");
+    console.log("  PUT  /api/update/pfp");
+    console.log("  PUT  /api/update/privacy");
+    console.log("  GET  /api/stats/get");
+    console.log("  POST /api/stats/addTask");
+    console.log("  GET  /api/stats/getTasks");
+    console.log("  PUT  /api/stats/updateTask");
+    console.log("  DELETE /api/stats/removeTask");
+    console.log("  GET  /api/library");
+    console.log("  GET  /api/library/folder/:folderId");
+    console.log("  GET  /api/library/path");
+    console.log("  POST /api/library/folder");
+    console.log("  POST /up/upload");
+    console.log("  GET  /up/file/:id");
+    console.log("  DELETE /api/library/file/:fileId");
+    console.log("  DELETE /api/library/folder/:folderId");
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
