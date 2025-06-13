@@ -4,9 +4,11 @@ const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const { Server } = require("socket.io");
+const jwt = require('jsonwebtoken');
 const { initializeWebSocket } = require('./services/websocket.service');
 require('./services/achievement.service');
-const habitResetJob = require('./controllers/scheduler');
+const habitResetJob= require('./controllers/scheduler');
 // Configure dotenv with explicit path
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -16,6 +18,7 @@ const uploadRoutes = require('./routes/upload');
 const settingsRoutes = require('./routes/settings.route');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const libraryRoutes = require('./routes/library.routes');
+const User = require('./models/user.model');
 
 // Debug environment variables
 console.log("Environment variables:");
@@ -26,9 +29,34 @@ console.log("JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
 const server = http.createServer(app);
 initializeWebSocket(server);
+const io = new Server(server, {
+    cors: {
+        origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
+        methods: ["GET", "POST"]
+    }
+});
+
+io.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+        return next(new Error('Authentication error'));
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return next(new Error('Authentication error'));
+        }
+        socket.user = user;
+        next();
+    } catch (err) {
+        next(new Error('Authentication error'));
+    }
+});
+
 // Configure CORS with specific options
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend URLs
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'], // Add your frontend URLs
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -59,25 +87,29 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-        console.log("Available routes:");
-        console.log("  POST /api/auth/login");
-        console.log("  POST /api/auth/register");
-        console.log("  GET  /api/auth/me");
-        console.log("  PUT  /api/update/name");
-        console.log("  PUT  /api/update/bio");
-        console.log("  PUT  /api/update/pfp");
-        console.log("  PUT  /api/update/privacy");
-        console.log("  GET  /api/stats/get");
-        console.log("  GET  /api/library");
-        console.log("  GET  /api/library/folder/:folderId");
-        console.log("  GET  /api/library/path");
-        console.log("  POST /api/library/folder");
-        console.log("  POST /up/upload");
-        console.log("  GET  /up/file/:id");
-        console.log("  DELETE /api/library/file/:fileId");
-        console.log("  DELETE /api/library/folder/:folderId");
-    })
+    console.log('Connected to MongoDB successfully!');
+    console.log("Available routes:");
+    console.log("  POST /api/auth/login");
+    console.log("  POST /api/auth/register");
+    console.log("  GET  /api/auth/me");
+    console.log("  PUT  /api/update/name");
+    console.log("  PUT  /api/update/bio");
+    console.log("  PUT  /api/update/pfp");
+    console.log("  PUT  /api/update/privacy");
+    console.log("  GET  /api/stats/get");
+    console.log("  POST /api/stats/addTask");
+    console.log("  GET  /api/stats/getTasks");
+    console.log("  PUT  /api/stats/updateTask");
+    console.log("  DELETE /api/stats/removeTask");
+    console.log("  GET  /api/library");
+    console.log("  GET  /api/library/folder/:folderId");
+    console.log("  GET  /api/library/path");
+    console.log("  POST /api/library/folder");
+    console.log("  POST /up/upload");
+    console.log("  GET  /up/file/:id");
+    console.log("  DELETE /api/library/file/:fileId");
+    console.log("  DELETE /api/library/folder/:folderId");
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
@@ -85,7 +117,29 @@ mongoose.connect(mongoURI).then(() => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+io.on('connection', (socket) => {
+    console.log('a user connected', socket.id);
+
+    socket.on('join_room', (roomCode) => {
+        socket.join(roomCode);
+        console.log(`User ${socket.user.firstName} (${socket.id}) joined room ${roomCode}`);
+    });
+
+    socket.on('send_message', (data) => {
+        const messageData = {
+            ...data,
+            sender: socket.user.firstName,
+            avatar: socket.user.profilePicture // Or a default avatar
+        };
+        socket.to(data.roomCode).emit('receive_message', messageData);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('user disconnected', socket.id);
+    });
+});
+
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 

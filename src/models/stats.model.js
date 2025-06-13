@@ -50,120 +50,119 @@ const StatsSchema = new mongoose.Schema({
             default: 0
         }
     },
-    tasks:{
+    tasks: {
         type: [
-        {
-            taskTitle: {
-                type: String,
-                required: true
-
-            },
-            taskDescription: {
-                type: String,
-                required: true
-            },
-            priority: {
-                type: String,
-                enum: ['Low', 'Medium', 'High', 'Urgent'], 
-                required: true
-            },
-            category: {
-                type: String,
-                required: true
-            },
-            estimatedTime: {
-            type: Number,
-            required: true
-            },
-            dueDate:
             {
-                type: Date,
-                required: true
-            },
-            tags: {
-                type: [
-                    {
-                        type: String
+                taskTitle: {
+                    type: String,
+                    required: true
 
-                    }
-                ],
-                default: []
-            },
-            subTasks: {
-                type: [
-                    {
-                        type: String
-                    }
-                ],
-                default: []
-                
-                
+                },
+                taskDescription: {
+                    type: String,
+                    required: true
+                },
+                priority: {
+                    type: String,
+                    enum: ['Low', 'Medium', 'High', 'Urgent'],
+                    required: true
+                },
+                category: {
+                    type: String,
+                    required: true
+                },
+                estimatedTime: {
+                    type: Number,
+                    required: true
+                },
+                dueDate:
+                {
+                    type: Date,
+                },
+                tags: {
+                    type: [
+                        {
+                            type: String
+
+                        }
+                    ],
+                    default: []
+                },
+                subTasks: {
+                    type: [
+                        {
+                            type: String
+                        }
+                    ],
+                    default: []
+
+
+                }
+
             }
-
-        }
-    ],
-default:[]
-},
-habits: {
-    type:[
-        {
-name: {
-    type: String,
-    required: true
-},
-description: {
-    type: String,
-    required: true
-},
-frequency: {
-    type: String,
-    enum: ['Daily', 'Weekly', 'Monthly'],
-    required: true
-},
-category:{
-    type: String,
-    enum: ['Wellness', 'Learning', 'Fitness', 'Productivity', 'Mindfulness'],
-    required: true
-},
-targetCount: {
-    type: Number,
-    required: true
-},
-startDate: {
-    type: Date,
-    required: true,
-    default: new Date()
-},
-resetDate: {
-    type: Date,
-    default: null
-},
-priority:{
-    type: String,
-    enum: ['Low', 'Medium', 'High'],
-    required: true
-},
-streak: {
-    type: Number,
-    default: 0
-},
-lastCompleted: {
-    type: Date,
-    default: null
-},
-progress: {
-    type: Number,
-    default: 0
-},
-completed :
-{
-    type: Boolean,
-    default: false
-}
- }
-    ], 
-    default: []
-},
+        ],
+        default: []
+    },
+    habits: {
+        type: [
+            {
+                name: {
+                    type: String,
+                    required: true
+                },
+                description: {
+                    type: String,
+                    required: true
+                },
+                frequency: {
+                    type: String,
+                    enum: ['Daily', 'Weekly', 'Monthly'],
+                    required: true
+                },
+                category: {
+                    type: String,
+                    enum: ['Wellness', 'Learning', 'Fitness', 'Productivity', 'Mindfulness'],
+                    required: true
+                },
+                targetCount: {
+                    type: Number,
+                    required: true
+                },
+                startDate: {
+                    type: Date,
+                    required: true,
+                    default: new Date()
+                },
+                resetDate: {
+                    type: Date,
+                    default: null
+                },
+                priority: {
+                    type: String,
+                    enum: ['Low', 'Medium', 'High'],
+                    required: true
+                },
+                streak: {
+                    type: Number,
+                    default: 0
+                },
+                lastCompleted: {
+                    type: Date,
+                    default: null
+                },
+                progress: {
+                    type: Number,
+                    default: 0
+                },
+                completed:
+                {
+                    type: Boolean,
+                    default: false
+                }
+            }
+        ],
+        default: []
+    },
     habitStreak: {
         type: Number,
         default: 0
