@@ -1,22 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { s3, bucket } = require('../config/wasabi');
+const { gcs, bucket, getSignedUrl } = require('../config/gcs');
 const upload = require('../middleware/upload');
 const { UploadedFile, LibraryFile } = require('../models/models');
 const fs = require('fs').promises;
 const passport = require('passport');
 const path = require('path');
-
-const getFileDownloadUrl = (key) => {
-  if (!key) return null;
-  const params = {
-    Bucket: bucket,
-    Key: key,
-    Expires: 60 * 60 * 24 // 1 day in seconds
-  };
-  return s3.getSignedUrl('getObject', params);
-};
 const mongoose = require('mongoose');
+
+// Helper function to get file download URL (now using async/await)
+const getFileDownloadUrl = async(key) => {
+    if (!key) return null;
+    return await getSignedUrl(key);
+};
 
 // Debug middleware to log request body
 router.use((req, res, next) => {
@@ -62,21 +58,22 @@ router.post('/upload', passport.authenticate('jwt', { session: false }), upload.
 
         const folderName = req.body.folderName || 'default_library'; // Get folder name from request body, default to 'default_library'
         const key = `library/${userId}/${folderName}/${file.filename}`;
-        const params = {
-            Bucket: bucket,
-            Key: key,
-            Body: fileContent,
-            ContentType: file.mimetype
-        };
 
-        await s3.upload(params).promise();
-        console.log('File uploaded to Wasabi');
+        // Upload to Google Cloud Storage
+        const gcsFile = gcs.file(key);
+        await gcsFile.save(fileContent, {
+            contentType: file.mimetype,
+            metadata: {
+                contentType: file.mimetype
+            }
+        });
+        console.log('File uploaded to Google Cloud Storage');
 
-        // Store only the S3 key in the database
+        // Store only the GCS key in the database
         const uploadedFile = new UploadedFile({
             user_id: userId,
             file_name: file.originalname,
-            file_path: key // store the S3 key, not the public URL
+            file_path: key // store the GCS key, not the public URL
         });
         await uploadedFile.save();
         console.log('File metadata saved to database with ID:', uploadedFile._id);
@@ -109,7 +106,7 @@ router.post('/upload', passport.authenticate('jwt', { session: false }), upload.
         }
 
         // Return the pre-signed download URL
-        const downloadUrl = getFileDownloadUrl(key);
+        const downloadUrl = await getFileDownloadUrl(key);
         const responseData = {
             success: true,
             message: 'File uploaded successfully',
@@ -156,38 +153,29 @@ router.get('/file/:id', passport.authenticate('jwt', { session: false }), async(
         }
 
         try {
-            // Extract key from the file path
-            const fileUrl = new URL(file.file_path);
-            const key = fileUrl.pathname.substring(1); // Remove the leading slash
-
+            const key = file.file_path;
             console.log('Attempting to retrieve file with key:', key);
 
-            const params = {
-                Bucket: bucket,
-                Key: key
-            };
-
-            const headParams = {
-                Bucket: bucket,
-                Key: key
-            };
-
-            // First check if the file exists in S3
+            // Check if file exists in GCS
             try {
-                await s3.headObject(headParams).promise();
-                console.log('File exists in Wasabi');
-            } catch (headErr) {
-                console.error('Error checking if file exists in Wasabi:', headErr);
+                const [exists] = await gcs.file(key).exists();
+                if (!exists) {
+                    console.error('File does not exist in Google Cloud Storage');
+                    return res.status(404).json({ error: 'File not found in storage' });
+                }
+                console.log('File exists in Google Cloud Storage');
+            } catch (checkErr) {
+                console.error('Error checking if file exists in GCS:', checkErr);
                 return res.status(404).json({ error: 'File not found in storage' });
             }
 
-            // Get the file from S3
-            const fileStream = s3.getObject(params).createReadStream();
+            // Stream the file from GCS
+            const fileStream = gcs.file(key).createReadStream();
             res.setHeader('Content-Type', file.mimetype || 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${file.file_name}"`);
 
             fileStream.on('error', (err) => {
-                console.error('Error streaming file from Wasabi:', err);
+                console.error('Error streaming file from Google Cloud Storage:', err);
                 // Only send error if headers haven't been sent yet
                 if (!res.headersSent) {
                     res.status(500).json({ error: 'Failed to stream file' });
