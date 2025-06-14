@@ -2,27 +2,22 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user.model.js');
 const Stats = require('../models/stats.model.js');
 const mongoose = require('mongoose');
-const { s3, bucket } = require('../config/wasabi');
+const { getSignedUrl } = require('../config/gcs');
 
-const getProfilePictureDownloadUrl = (key) => {
+const getProfilePictureDownloadUrl = async(key) => {
     if (!key) return null;
-    const params = {
-        Bucket: bucket,
-        Key: key,
-        Expires: 60 * 60 * 24 // 1 day in seconds
-    };
-    return s3.getSignedUrl('getObject', params);
+    return await getSignedUrl(key);
 };
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId },
         process.env.JWT_SECRET || 'your_jwt_secret', {
-        expiresIn: '1d'
-    }
+            expiresIn: '1d'
+        }
     );
 };
 
-exports.register = async (req, res) => {
+exports.register = async(req, res) => {
     try {
         const { email, firstName, lastName, password } = req.body;
         if (!email || !firstName || !lastName || !password) {
@@ -51,6 +46,8 @@ exports.register = async (req, res) => {
         });
 
         const token = generateToken(user._id);
+        const profilePictureUrl = await getProfilePictureDownloadUrl(user.profilePicture);
+
         res.status(201).json({
             success: true,
             token,
@@ -59,7 +56,7 @@ exports.register = async (req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
+                profilePicture: profilePictureUrl,
                 bio: user.bio,
                 settings: {
                     profileVisibility: user.settings.profileVisibility,
@@ -81,10 +78,11 @@ exports.register = async (req, res) => {
     }
 };
 
-exports.login = (req, res) => {
+exports.login = async(req, res) => {
     try {
         const user = req.user;
-        const token = generateToken(user._id)
+        const token = generateToken(user._id);
+        const profilePictureUrl = await getProfilePictureDownloadUrl(user.profilePicture);
 
         res.status(200).json({
             success: true,
@@ -94,7 +92,7 @@ exports.login = (req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
+                profilePicture: profilePictureUrl,
                 bio: user.bio,
                 settings: {
                     profileVisibility: user.settings.profileVisibility,
@@ -104,11 +102,8 @@ exports.login = (req, res) => {
                     usageAnalytics: user.settings.usageAnalytics,
                     crashReports: user.settings.crashReports
                 }
-
             }
-
         });
-
     } catch (err) {
         console.log('login error: ', err);
         res.status(500).json({
@@ -119,9 +114,11 @@ exports.login = (req, res) => {
     }
 };
 
-exports.getCurrentUser = async (req, res) => {
+exports.getCurrentUser = async(req, res) => {
     try {
         const user = req.user;
+        const profilePictureUrl = await getProfilePictureDownloadUrl(user.profilePicture);
+
         res.status(200).json({
             success: true,
             user: {
@@ -129,7 +126,7 @@ exports.getCurrentUser = async (req, res) => {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                profilePicture: getProfilePictureDownloadUrl(user.profilePicture),
+                profilePicture: profilePictureUrl,
                 bio: user.bio,
                 settings: {
                     profileVisibility: user.settings.profileVisibility,
