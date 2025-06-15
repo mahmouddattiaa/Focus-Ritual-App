@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
-
+require('./controllers/scheduler');
 // Configure dotenv with explicit path
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
