@@ -1,11 +1,11 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize the Gemini API with the key from environment variables
-const geminiApiKey = process.env.GEMINI_API_KEY;
+// Initialize the Gemini API with the hardcoded key
+const geminiApiKey = process.env.GEMINI_API_KEY || 'AIzaSyAdKJp_4Q3Ax62Mn5zc03nt5DZwFk0dJg4';
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-// Get the generative model
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+// Get the generative model - updated to use the correct model name
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 /**
  * Generate a response from Gemini AI
@@ -14,10 +14,6 @@ const model = genAI.getGenerativeModel({ model: "gemini-pro" });
  */
 const generateResponse = async(prompt) => {
     try {
-        if (!geminiApiKey) {
-            throw new Error('GEMINI_API_KEY not found in environment variables');
-        }
-
         const result = await model.generateContent(prompt);
         const response = result.response;
         return response.text();
@@ -35,10 +31,6 @@ const generateResponse = async(prompt) => {
  */
 const generateChatResponse = async(history, prompt) => {
     try {
-        if (!geminiApiKey) {
-            throw new Error('GEMINI_API_KEY not found in environment variables');
-        }
-
         const chat = model.startChat({
             history: history.map(msg => ({
                 role: msg.role,
