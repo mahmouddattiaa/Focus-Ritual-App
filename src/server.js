@@ -20,6 +20,7 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const libraryRoutes = require('./routes/library.routes');
 const geminiRoutes = require('./routes/gemini.routes');
 const aiRoutes = require('./routes/ai.routes');
+const subjectRoutes = require('./routes/subject.routes');
 const User = require('./models/user.model');
 
 // Debug environment variables
@@ -81,6 +82,7 @@ app.use('/api/stats', dashboardRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/subjects', subjectRoutes);
 
 // Mount upload routes at both /api/up and /up for compatibility
 app.use('/api/up', uploadRoutes);
@@ -115,13 +117,18 @@ mongoose.connect(mongoURI).then(() => {
     console.log("  DELETE /api/library/folder/:folderId");
     console.log("  POST /api/gemini/generate");
     console.log("  POST /api/gemini/chat");
+    console.log("  POST /api/subjects/create");
+    console.log("  GET  /api/subjects");
+    console.log("  GET  /api/subjects/:subjectId");
+    console.log("  PUT  /api/subjects/:subjectId");
+    console.log("  DELETE /api/subjects/:subjectId");
 })
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
     });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 io.on('connection', (socket) => {
     console.log('a user connected', socket.id);
