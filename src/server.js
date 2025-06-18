@@ -19,6 +19,7 @@ const settingsRoutes = require('./routes/settings.route');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const libraryRoutes = require('./routes/library.routes');
 const geminiRoutes = require('./routes/gemini.routes');
+const aiRoutes = require('./routes/ai.routes');
 const User = require('./models/user.model');
 
 // Debug environment variables
@@ -37,7 +38,7 @@ const io = new Server(server, {
     }
 });
 
-io.use(async(socket, next) => {
+io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
         return next(new Error('Authentication error'));
@@ -79,6 +80,7 @@ app.use('/api/update', settingsRoutes);
 app.use('/api/stats', dashboardRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Mount upload routes at both /api/up and /up for compatibility
 app.use('/api/up', uploadRoutes);
@@ -89,31 +91,31 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-        console.log("Available routes:");
-        console.log("  POST /api/auth/login");
-        console.log("  POST /api/auth/register");
-        console.log("  GET  /api/auth/me");
-        console.log("  PUT  /api/update/name");
-        console.log("  PUT  /api/update/bio");
-        console.log("  PUT  /api/update/pfp");
-        console.log("  PUT  /api/update/privacy");
-        console.log("  GET  /api/stats/get");
-        console.log("  POST /api/stats/addTask");
-        console.log("  GET  /api/stats/getTasks");
-        console.log("  PUT  /api/stats/updateTask");
-        console.log("  DELETE /api/stats/removeTask");
-        console.log("  GET  /api/library");
-        console.log("  GET  /api/library/folder/:folderId");
-        console.log("  GET  /api/library/path");
-        console.log("  POST /api/library/folder");
-        console.log("  POST /up/upload");
-        console.log("  GET  /up/file/:id");
-        console.log("  DELETE /api/library/file/:fileId");
-        console.log("  DELETE /api/library/folder/:folderId");
-        console.log("  POST /api/gemini/generate");
-        console.log("  POST /api/gemini/chat");
-    })
+    console.log('Connected to MongoDB successfully!');
+    console.log("Available routes:");
+    console.log("  POST /api/auth/login");
+    console.log("  POST /api/auth/register");
+    console.log("  GET  /api/auth/me");
+    console.log("  PUT  /api/update/name");
+    console.log("  PUT  /api/update/bio");
+    console.log("  PUT  /api/update/pfp");
+    console.log("  PUT  /api/update/privacy");
+    console.log("  GET  /api/stats/get");
+    console.log("  POST /api/stats/addTask");
+    console.log("  GET  /api/stats/getTasks");
+    console.log("  PUT  /api/stats/updateTask");
+    console.log("  DELETE /api/stats/removeTask");
+    console.log("  GET  /api/library");
+    console.log("  GET  /api/library/folder/:folderId");
+    console.log("  GET  /api/library/path");
+    console.log("  POST /api/library/folder");
+    console.log("  POST /up/upload");
+    console.log("  GET  /up/file/:id");
+    console.log("  DELETE /api/library/file/:fileId");
+    console.log("  DELETE /api/library/folder/:folderId");
+    console.log("  POST /api/gemini/generate");
+    console.log("  POST /api/gemini/chat");
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
