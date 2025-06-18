@@ -21,6 +21,7 @@ const libraryRoutes = require('./routes/library.routes');
 const geminiRoutes = require('./routes/gemini.routes');
 const aiRoutes = require('./routes/ai.routes');
 const subjectRoutes = require('./routes/subject.routes');
+const friendRoutes = require('./routes/friends.routes');
 const User = require('./models/user.model');
 
 // Debug environment variables
@@ -83,7 +84,7 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/subjects', subjectRoutes);
-
+app.use('/api/friends', friendRoutes);
 // Mount upload routes at both /api/up and /up for compatibility
 app.use('/api/up', uploadRoutes);
 app.use('/up', uploadRoutes); // Add this route for direct access without /api prefix

@@ -38,6 +38,31 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    friends: {
+        type:[
+            {
+             
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User'
+              
+                }
+
+
+            
+        ],
+        default: []
+    },
+    friendRequests:{
+        type:[
+            {
+                friendId:{
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User'
+                },
+            }
+        ],
+        default: []
+    },
     settings: {
         profileVisibility: {
             type: String,
