@@ -207,4 +207,107 @@ router.get('/files', passport.authenticate('jwt', { session: false }), async(req
     }
 });
 
+router.post('/collaboration-upload', passport.authenticate('jwt', { session: false }), upload.single('file'), async(req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const userId = req.user._id;
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        console.log('Collaboration file uploaded to:', file.path);
+        console.log('File info:', {
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype
+        });
+
+        // Required fields for collaboration
+        const { roomCode } = req.body;
+        if (!roomCode) {
+            return res.status(400).json({ error: 'Room code is required' });
+        }
+
+        // Verify the file exists
+        await fs.access(file.path);
+        console.log('File exists and is accessible');
+
+        const fileContent = await fs.readFile(file.path);
+        console.log('File read successfully, size:', fileContent.length);
+
+        // Upload to Google Cloud Storage in a collaboration folder
+        const key = `collaboration/${roomCode}/${Date.now()}-${file.originalname}`;
+
+        // Upload to Google Cloud Storage
+        const gcsFile = gcs.file(key);
+        await gcsFile.save(fileContent, {
+            contentType: file.mimetype,
+            metadata: {
+                contentType: file.mimetype
+            }
+        });
+        console.log('File uploaded to Google Cloud Storage');
+
+        // Store only the GCS key in the database
+        const uploadedFile = new UploadedFile({
+            user_id: userId,
+            file_name: file.originalname,
+            file_path: key // store the GCS key, not the public URL
+        });
+        await uploadedFile.save();
+        console.log('File metadata saved to database with ID:', uploadedFile._id);
+
+        // Try to delete the file, but don't fail if it doesn't work
+        try {
+            await fs.unlink(file.path);
+            console.log('Temporary file deleted');
+        } catch (unlinkError) {
+            console.error('Warning: Could not delete temporary file:', unlinkError);
+        }
+
+        // Return the pre-signed download URL
+        const downloadUrl = await getFileDownloadUrl(key);
+
+        // Determine file type
+        let fileType = 'other';
+        if (file.mimetype.includes('pdf')) fileType = 'pdf';
+        else if (file.mimetype.includes('image')) fileType = 'image';
+        else if (file.mimetype.includes('video')) fileType = 'video';
+
+        const responseData = {
+            success: true,
+            message: 'File uploaded successfully',
+            id: uploadedFile._id.toString(),
+            name: file.originalname,
+            type: fileType,
+            size: formatFileSize(file.size),
+            date: new Date().toLocaleDateString(),
+            downloadUrl,
+            user: {
+                id: userId.toString(),
+                name: `${req.user.firstName} ${req.user.lastName}`,
+                avatar: req.user.profilePicture || `https://i.pravatar.cc/40?u=${userId}`
+            }
+        };
+
+        console.log('Sending collaboration file response:', responseData);
+        res.json(responseData);
+    } catch (err) {
+        console.error('Collaboration upload error:', err);
+        res.status(500).json({ error: 'Failed to upload file', details: err.message });
+    }
+});
+
+// Helper function to format file size
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    else return (bytes / 1073741824).toFixed(1) + ' GB';
+}
+
 module.exports = router;

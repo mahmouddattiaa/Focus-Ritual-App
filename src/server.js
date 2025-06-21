@@ -35,12 +35,16 @@ const server = http.createServer(app);
 initializeWebSocket(server);
 const io = new Server(server, {
     cors: {
-        origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'],
-        methods: ["GET", "POST"]
+        origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5175", "http://localhost:5174"], // Your frontend URLs
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
-io.use(async (socket, next) => {
+// Attach io to the app context to make it accessible in routes if needed
+app.set('io', io);
+
+io.use(async(socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
         return next(new Error('Authentication error'));
@@ -60,7 +64,7 @@ io.use(async (socket, next) => {
 
 // Configure CORS with specific options
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'], // Add your frontend URLs
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174', 'http://localhost:5175'], // Add your frontend URLs
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
@@ -94,36 +98,36 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-    console.log('Connected to MongoDB successfully!');
-    console.log("Available routes:");
-    console.log("  POST /api/auth/login");
-    console.log("  POST /api/auth/register");
-    console.log("  GET  /api/auth/me");
-    console.log("  PUT  /api/update/name");
-    console.log("  PUT  /api/update/bio");
-    console.log("  PUT  /api/update/pfp");
-    console.log("  PUT  /api/update/privacy");
-    console.log("  GET  /api/stats/get");
-    console.log("  POST /api/stats/addTask");
-    console.log("  GET  /api/stats/getTasks");
-    console.log("  PUT  /api/stats/updateTask");
-    console.log("  DELETE /api/stats/removeTask");
-    console.log("  GET  /api/library");
-    console.log("  GET  /api/library/folder/:folderId");
-    console.log("  GET  /api/library/path");
-    console.log("  POST /api/library/folder");
-    console.log("  POST /up/upload");
-    console.log("  GET  /up/file/:id");
-    console.log("  DELETE /api/library/file/:fileId");
-    console.log("  DELETE /api/library/folder/:folderId");
-    console.log("  POST /api/gemini/generate");
-    console.log("  POST /api/gemini/chat");
-    console.log("  POST /api/subjects/create");
-    console.log("  GET  /api/subjects");
-    console.log("  GET  /api/subjects/:subjectId");
-    console.log("  PUT  /api/subjects/:subjectId");
-    console.log("  DELETE /api/subjects/:subjectId");
-})
+        console.log('Connected to MongoDB successfully!');
+        console.log("Available routes:");
+        console.log("  POST /api/auth/login");
+        console.log("  POST /api/auth/register");
+        console.log("  GET  /api/auth/me");
+        console.log("  PUT  /api/update/name");
+        console.log("  PUT  /api/update/bio");
+        console.log("  PUT  /api/update/pfp");
+        console.log("  PUT  /api/update/privacy");
+        console.log("  GET  /api/stats/get");
+        console.log("  POST /api/stats/addTask");
+        console.log("  GET  /api/stats/getTasks");
+        console.log("  PUT  /api/stats/updateTask");
+        console.log("  DELETE /api/stats/removeTask");
+        console.log("  GET  /api/library");
+        console.log("  GET  /api/library/folder/:folderId");
+        console.log("  GET  /api/library/path");
+        console.log("  POST /api/library/folder");
+        console.log("  POST /up/upload");
+        console.log("  GET  /up/file/:id");
+        console.log("  DELETE /api/library/file/:fileId");
+        console.log("  DELETE /api/library/folder/:folderId");
+        console.log("  POST /api/gemini/generate");
+        console.log("  POST /api/gemini/chat");
+        console.log("  POST /api/subjects/create");
+        console.log("  GET  /api/subjects");
+        console.log("  GET  /api/subjects/:subjectId");
+        console.log("  PUT  /api/subjects/:subjectId");
+        console.log("  DELETE /api/subjects/:subjectId");
+    })
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
@@ -131,25 +135,82 @@ mongoose.connect(mongoURI).then(() => {
 
 const PORT = process.env.PORT || 5001;
 
+// In-memory stores for collaboration. In production, use a persistent store like Redis.
+const rooms = {}; // Using an object as a dictionary
+const socketToRoom = {};
+
 io.on('connection', (socket) => {
     console.log('a user connected', socket.id);
 
+    // Collaboration room logic
+    socket.on('joinRoom', ({ roomCode, user }) => {
+        socket.join(roomCode);
+        socketToRoom[socket.id] = roomCode;
+
+        if (!rooms[roomCode]) {
+            rooms[roomCode] = { participants: [], messages: [] };
+        }
+
+        // Add participant if not already present
+        if (!rooms[roomCode].participants.some(p => p.id === user.id)) {
+            rooms[roomCode].participants.push(user);
+        }
+
+        console.log(`${user.name} (${socket.id}) joined room ${roomCode}. Participants:`, rooms[roomCode].participants.length);
+
+        // Send the current state to the joining user
+        socket.emit('roomState', rooms[roomCode]);
+
+        // Notify others in the room
+        socket.to(roomCode).emit('userJoined', user);
+    });
+
+    socket.on('sendMessage', (message) => {
+        const roomCode = socketToRoom[socket.id];
+        if (roomCode && rooms[roomCode]) {
+            rooms[roomCode].messages.push(message);
+            io.to(roomCode).emit('newMessage', message);
+        }
+    });
+
+    socket.on('addReaction', (data) => {
+        const roomCode = socketToRoom[socket.id];
+        if (roomCode) {
+            io.to(roomCode).emit('reactionAdded', data);
+        }
+    });
+
+    socket.on('setTyping', (data) => {
+        const roomCode = socketToRoom[socket.id];
+        if (roomCode) {
+            socket.to(roomCode).emit('typingStatusChanged', data);
+        }
+    });
+
+
+    // Original event handlers (if any) can be kept or merged
     socket.on('join_room', (roomCode) => {
         socket.join(roomCode);
-        console.log(`User ${socket.user.firstName} (${socket.id}) joined room ${roomCode}`);
+        console.log(`User ${socket.id} joined legacy room ${roomCode}`);
     });
 
     socket.on('send_message', (data) => {
-        const messageData = {
-            ...data,
-            sender: socket.user.firstName,
-            avatar: socket.user.profilePicture // Or a default avatar
-        };
+        const messageData = {...data, sender: socket.id };
         socket.to(data.roomCode).emit('receive_message', messageData);
     });
 
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
+        const roomCode = socketToRoom[socket.id];
+
+        if (roomCode && rooms[roomCode]) {
+            const user = rooms[roomCode].participants.find(p => p.id === socket.id);
+            if (user) {
+                rooms[roomCode].participants = rooms[roomCode].participants.filter(p => p.id !== socket.id);
+                socket.to(roomCode).emit('userLeft', { userId: socket.id, name: user.name });
+            }
+        }
+        delete socketToRoom[socket.id];
     });
 });
 
