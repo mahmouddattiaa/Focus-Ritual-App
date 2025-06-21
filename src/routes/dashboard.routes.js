@@ -4,44 +4,47 @@ const statsController = require('../controllers/stats.controller');
 const router = express.Router();
 
 
-router.put('/task', passport.authenticate('jwt', {session: false}), statsController.CompleteTask);
+router.put('/task', passport.authenticate('jwt', { session: false }), statsController.CompleteTask);
 
 
-router.put('/dec', passport.authenticate('jwt', {session:false}), statsController.DecTasks);
+router.put('/dec', passport.authenticate('jwt', { session: false }), statsController.DecTasks);
 
 
-router.put('/session', passport.authenticate('jwt', {session: false}), statsController.IncSessions);
+router.put('/session', passport.authenticate('jwt', { session: false }), statsController.IncSessions);
 
 
-router.put('/hours', passport.authenticate('jwt', {session: false}), statsController.IncreaseHours);
+router.put('/hours', passport.authenticate('jwt', { session: false }), statsController.IncreaseHours);
 
 
 router.get('/get', passport.authenticate('jwt', { session: false }), statsController.GetAllStats);
 
 
 
-router.post('/addTask', passport.authenticate('jwt', {session: false}), statsController.addTask);
+router.post('/addTask', passport.authenticate('jwt', { session: false }), statsController.addTask);
 
 
-router.delete('/removeTask', passport.authenticate('jwt', {session: false}), statsController.removeTask);
+router.delete('/removeTask', passport.authenticate('jwt', { session: false }), statsController.removeTask);
 
 
-router.put('/updateTask', passport.authenticate('jwt', {session: false}), statsController.updateTask);
+router.put('/updateTask', passport.authenticate('jwt', { session: false }), statsController.updateTask);
 
 
-router.get('/getTasks', passport.authenticate('jwt', {session: false}), statsController.getTasks);
+router.get('/getTasks', passport.authenticate('jwt', { session: false }), statsController.getTasks);
 
-router.post('/addHabit', passport.authenticate('jwt', {session: false}), statsController.addHabit);
+router.post('/addHabit', passport.authenticate('jwt', { session: false }), statsController.addHabit);
 
-router.delete('/removeHabit', passport.authenticate('jwt', {session: false}), statsController.removeHabit);
+router.delete('/removeHabit', passport.authenticate('jwt', { session: false }), statsController.removeHabit);
 
-router.put('/updateHabit', passport.authenticate('jwt', {session: false}), statsController.updateHabit);
+router.put('/updateHabit', passport.authenticate('jwt', { session: false }), statsController.updateHabit);
 
-router.put('/progressHabit', passport.authenticate('jwt', {session: false}), statsController.progressHabit);    
+router.put('/progressHabit', passport.authenticate('jwt', { session: false }), statsController.progressHabit);
 
-router.get('/getHabits', passport.authenticate('jwt', {session: false}), statsController.getHabits);
+router.get('/getHabits', passport.authenticate('jwt', { session: false }), statsController.getHabits);
 
-router.get('/achievements', passport.authenticate('jwt', {session: false}), statsController.getAchievements);
+router.get('/achievements', passport.authenticate('jwt', { session: false }), statsController.getAchievements);
+
+// Add a route to seed test hourly data
+router.post('/seedHourly', passport.authenticate('jwt', { session: false }), statsController.SeedHourlyData);
 
 
 module.exports = router;

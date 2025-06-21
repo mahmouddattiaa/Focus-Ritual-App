@@ -205,12 +205,12 @@ const StatsSchema = new mongoose.Schema({
         },
         default: new Map()
     },
-    achievements:{
+    achievements: {
         type: [{
-            achievementId:{
+            achievementId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Achievement",
-                required: true, 
+                required: true,
                 index: true
 
             },
@@ -218,13 +218,37 @@ const StatsSchema = new mongoose.Schema({
                 type: Date,
                 default: null
             }
-        
+
         }
         ],
-        default:[]
+        default: []
+    },
+    productivityByHour: {
+        type: [{
+            hour: {
+                type: Number,
+                required: true
+            },
+            tasksCompleted: {
+                type: Number,
+                default: 0
+            },
+            focusTime: {
+                type: Number,
+                default: 0
+            },
+            productivityScore: {
+                type: Number,
+                default: 0
+            }
+        }],
+        default: Array.from({ length: 24 }, (_, i) => ({
+            hour: i,
+            tasksCompleted: 0,
+            focusTime: 0,
+            productivityScore: 0
+        }))
     }
-
-
 },
     {
         timestamps: true
@@ -232,13 +256,13 @@ const StatsSchema = new mongoose.Schema({
 );
 
 
-StatsSchema.pre('save', async function(next) {
+StatsSchema.pre('save', async function (next) {
     // Logic for Habit Streak Calculation
     if (this.isModified('habits')) {
         const allHabitsCompleted = this.habits.length > 0 && this.habits.every(h => h.completed);
 
         if (allHabitsCompleted) {
-            
+
             // --- NEW, MORE ROBUST DATE CREATION ---
             const now = new Date();
             // This creates a new date object representing the start of the current day in UTC, avoiding any mutation issues.
@@ -264,7 +288,7 @@ StatsSchema.pre('save', async function(next) {
             } else {
                 console.log(`🔴 SKIPPED: Streak already processed for today.`);
             }
-            
+
             // This line will now save the CORRECT date.
             this.lastActiveDate = todayUTC;
         }
@@ -290,11 +314,11 @@ StatsSchema.pre('save', async function(next) {
     if (this.isModified('habitStreak')) {
         this._modifiedPaths.habitStreak = true;
     }
-next();
+    next();
     // Logic for Achievement Event Emissions (for 'save' operations)
     // Access new values directly from 'this'
 });
-StatsSchema.post('findOneAndUpdate', async function() {
+StatsSchema.post('findOneAndUpdate', async function () {
     const update = this.getUpdate();
     const userId = this.getQuery().userId;
     const updatedStats = await this.model.findOne(this.getQuery());
@@ -304,8 +328,8 @@ StatsSchema.post('findOneAndUpdate', async function() {
             userId,
             sessionCount: updatedStats.focusSessions
         });
-console.log('focus sessions incremented');
-     
+        console.log('focus sessions incremented');
+
         const currentHour = new Date().getHours();
         if (currentHour >= 0 && currentHour < 4) {
             achievementEmitter.emit('focus:session:special', {
@@ -364,18 +388,18 @@ console.log('focus sessions incremented');
             newLevel: updatedStats.level
         });
     }
-      // Perfect Week Achievement
-      if (update.$set && update.$set.habitStreak) {
+    // Perfect Week Achievement
+    if (update.$set && update.$set.habitStreak) {
         console.log('hopefully I get here');
-            achievementEmitter.emit('habit:perfect:week', {
-                userId,
-                habitstreak: updatedStats.habitStreak
-      });
-        }
+        achievementEmitter.emit('habit:perfect:week', {
+            userId,
+            habitstreak: updatedStats.habitStreak
+        });
     }
+}
 );
 
-StatsSchema.post('save', async function(doc) { // It's good practice to use 'doc' here
+StatsSchema.post('save', async function (doc) { // It's good practice to use 'doc' here
     const userId = doc.userId;
     console.log('post-save hook executed'); // Debugging log
 
