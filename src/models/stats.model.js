@@ -177,7 +177,8 @@ const StatsSchema = new mongoose.Schema({
     },
     xp: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
     totalDistractions: {
         type: Number,

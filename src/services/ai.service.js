@@ -51,6 +51,8 @@ const analyzePdfFromGCS = async (fileId, lectureId, subjectId, title, user) => {
         // Set initial processing status
         setProcessingStatus(lectureId, 'Starting analysis', 5);
 
+        console.log(`Starting PDF analysis with fileId=${fileId}, lectureId=${lectureId}, subjectId=${subjectId}, title=${title}`);
+
         // 1. Get the file reference from the database
         // First check if this is a library file ID
         let uploadedFileId = fileId;
@@ -65,15 +67,24 @@ const analyzePdfFromGCS = async (fileId, lectureId, subjectId, title, user) => {
                 // If it's a library file, get the actual uploaded file ID
                 uploadedFileId = libraryFile.file_id;
                 console.log(`Found library file with ID ${fileId}, using uploaded file ID ${uploadedFileId}`);
+            } else {
+                console.log(`No library file found with ID ${fileId}, trying to use it directly as an uploaded file ID`);
+                // If no library file is found, try to use the ID directly as an uploaded file ID
+                uploadedFileId = fileId;
             }
+        } else {
+            console.log(`Invalid ObjectId format for fileId: ${fileId}`);
         }
 
         // Now get the actual file
         fileDoc = await UploadedFile.findById(uploadedFileId);
 
         if (!fileDoc) {
+            console.error(`File not found in database with ID: ${uploadedFileId}`);
             throw new Error('File not found in database');
         }
+
+        console.log(`Found uploaded file: ${fileDoc.file_name}`);
 
         setProcessingStatus(lectureId, 'Downloading file from storage', 10);
 

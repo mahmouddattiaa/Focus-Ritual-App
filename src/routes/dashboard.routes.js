@@ -43,8 +43,5 @@ router.get('/getHabits', passport.authenticate('jwt', { session: false }), stats
 
 router.get('/achievements', passport.authenticate('jwt', { session: false }), statsController.getAchievements);
 
-// Add a route to seed test hourly data
-router.post('/seedHourly', passport.authenticate('jwt', { session: false }), statsController.SeedHourlyData);
-
 
 module.exports = router;

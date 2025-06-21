@@ -2,6 +2,40 @@ const { Stats } = require('../models/stats.model.js');
 
 const User = require('../models/user.model.js');
 
+const ensureProductivityByHour = async (userId) => {
+    try {
+        const stats = await Stats.findOne({ userId });
+        if (!stats) return null;
+
+        // Check if productivityByHour exists and has the right structure
+        if (!stats.productivityByHour || !Array.isArray(stats.productivityByHour) || stats.productivityByHour.length !== 24) {
+            console.log(`Initializing productivityByHour for user ${userId}`);
+
+            // Create the default 24-hour array
+            const defaultProductivityByHour = Array.from({ length: 24 }, (_, i) => ({
+                hour: i,
+                tasksCompleted: 0,
+                focusTime: 0,
+                productivityScore: 0
+            }));
+
+            // Update the user's stats with the default array
+            await Stats.findOneAndUpdate(
+                { userId },
+                { $set: { productivityByHour: defaultProductivityByHour } },
+                { new: true }
+            );
+
+            return defaultProductivityByHour;
+        }
+
+        return stats.productivityByHour;
+    } catch (err) {
+        console.error(`Error ensuring productivityByHour for user ${userId}:`, err);
+        return null;
+    }
+};
+
 exports.IncSessions = async (req, res) => {
     try {
         if (!req.user) {
@@ -66,66 +100,25 @@ exports.IncreaseHours = async (req, res) => {
         // First get current stats to update hour-based productivity
         const currentStats = await Stats.findOne({ userId });
 
-        // Initialize productivityByHour if it doesn't exist
-        if (!currentStats.productivityByHour || !Array.isArray(currentStats.productivityByHour) || currentStats.productivityByHour.length === 0) {
-            console.log('Initializing missing productivityByHour for user:', userId);
-            currentStats.productivityByHour = Array.from({ length: 24 }, (_, i) => ({
-                hour: i,
-                tasksCompleted: 0,
-                focusTime: 0,
-                productivityScore: 0
-            }));
-            await currentStats.save();
-        }
-
         // Prepare the update operation
         const updateOperation = {
             $inc: {
                 focusTime: time,
                 [`dailyActivity.${dateKey}.focusTime`]: time,
-                totalDistractions: distractions
+                totalDistractions: distractions,
+                [`productivityByHour.${currentHour}.focusTime`]: time
             }
         };
 
-        // Find the current hour's data
-        let currentHourData = currentStats.productivityByHour.find(h => h.hour === currentHour);
-
-        // If we couldn't find the current hour data, something is wrong with our data structure
-        // Let's fix it by recreating that hour entry
-        if (!currentHourData) {
-            console.log(`Hour ${currentHour} missing from productivityByHour for user ${userId}. Fixing...`);
-            currentHourData = {
-                hour: currentHour,
-                focusTime: 0,
-                tasksCompleted: 0,
-                productivityScore: 0
-            };
-
-            // Add the missing hour into the array
-            currentStats.productivityByHour.push(currentHourData);
-
-            // Sort by hour to maintain order
-            currentStats.productivityByHour.sort((a, b) => a.hour - b.hour);
-
-            // Save the fixed stats
-            await currentStats.save();
-            console.log(`Fixed productivityByHour for user ${userId}`);
-        }
-
-        // Calculate the new focus time for this hour
-        const newFocusTime = (currentHourData.focusTime || 0) + time;
-
         // Calculate productivity score for this hour
-        const tasksCompleted = currentHourData.tasksCompleted || 0;
-        const hourScore = Math.min(100, Math.round((newFocusTime / 60) * 80 + (tasksCompleted * 20)));
-
-        // Update the specific hour directly
-        updateOperation.$set = {
-            [`productivityByHour.${currentStats.productivityByHour.findIndex(h => h.hour === currentHour)}.focusTime`]: newFocusTime,
-            [`productivityByHour.${currentStats.productivityByHour.findIndex(h => h.hour === currentHour)}.productivityScore`]: hourScore
-        };
-
-        console.log(`Updating hour ${currentHour} data:`, updateOperation.$set);
+        if (currentStats && currentStats.productivityByHour && currentStats.productivityByHour[currentHour]) {
+            const hourData = currentStats.productivityByHour[currentHour];
+            // Simple productivity score calculation for this hour
+            const hourScore = Math.min(100, Math.round((time / 60) * 80 + (hourData.tasksCompleted * 20)));
+            updateOperation.$set = {
+                [`productivityByHour.${currentHour}.productivityScore`]: hourScore
+            };
+        }
 
         const updatedStats = await Stats.findOneAndUpdate(
             { userId },
@@ -216,76 +209,30 @@ exports.CompleteTask = async (req, res) => {
         const currentHour = today.getHours();
 
         const stats = await Stats.findOne({ userId });
-        if (!stats) {
-            return res.status(404).json({
-                message: 'Stats not found'
-            });
-        }
-
         if (stats.tasksCompleted.totalTasks <= stats.tasksCompleted.totalCompleted) {
             return res.status(400).json({
                 message: 'cannot complete task when there are no tasks to complete'
             });
         }
 
-        // Initialize productivityByHour if it doesn't exist
-        if (!stats.productivityByHour || !Array.isArray(stats.productivityByHour) || stats.productivityByHour.length === 0) {
-            console.log('Initializing missing productivityByHour for user:', userId);
-            stats.productivityByHour = Array.from({ length: 24 }, (_, i) => ({
-                hour: i,
-                tasksCompleted: 0,
-                focusTime: 0,
-                productivityScore: 0
-            }));
-            await stats.save();
-        }
-
-        // Find the current hour's data
-        let currentHourData = stats.productivityByHour.find(h => h.hour === currentHour);
-
-        // If we couldn't find the current hour data, something is wrong with our data structure
-        // Let's fix it by recreating that hour entry
-        if (!currentHourData) {
-            console.log(`Hour ${currentHour} missing from productivityByHour for user ${userId}. Fixing...`);
-            currentHourData = {
-                hour: currentHour,
-                focusTime: 0,
-                tasksCompleted: 0,
-                productivityScore: 0
-            };
-
-            // Add the missing hour into the array
-            stats.productivityByHour.push(currentHourData);
-
-            // Sort by hour to maintain order
-            stats.productivityByHour.sort((a, b) => a.hour - b.hour);
-
-            // Save the fixed stats
-            await stats.save();
-            console.log(`Fixed productivityByHour for user ${userId}`);
-        }
-
-        // Calculate new values for this hour
-        const newTasksCompleted = (currentHourData.tasksCompleted || 0) + 1;
-        const focusTime = currentHourData.focusTime || 0;
-        const hourScore = Math.min(100, Math.round((focusTime / 60) * 80 + (newTasksCompleted * 20)));
-
-        // Get index of the current hour in the array
-        const hourIndex = stats.productivityByHour.findIndex(h => h.hour === currentHour);
-
         // Prepare update operation with productivityByHour increments
         const updateOperation = {
             $inc: {
                 'tasksCompleted.totalCompleted': 1,
                 [`dailyActivity.${dateKey}.tasksCompleted`]: 1,
-            },
-            $set: {
-                [`productivityByHour.${hourIndex}.tasksCompleted`]: newTasksCompleted,
-                [`productivityByHour.${hourIndex}.productivityScore`]: hourScore
+                [`productivityByHour.${currentHour}.tasksCompleted`]: 1
             }
         };
 
-        console.log(`Updating task completion for hour ${currentHour}:`, updateOperation.$set);
+        // If we have hour data, also update productivity score
+        if (stats.productivityByHour && stats.productivityByHour[currentHour]) {
+            const hourData = stats.productivityByHour[currentHour];
+            // Task completion boosts productivity score
+            const hourScore = Math.min(100, Math.round((hourData.focusTime / 60) * 80 + ((hourData.tasksCompleted + 1) * 20)));
+            updateOperation.$set = {
+                [`productivityByHour.${currentHour}.productivityScore`]: hourScore
+            };
+        }
 
         const updatedStats = await Stats.findOneAndUpdate(
             { userId },
@@ -296,6 +243,7 @@ exports.CompleteTask = async (req, res) => {
             }
         );
         if (updatedStats) {
+
             const focusSessions = updatedStats.focusSessions;
             const focusTime = updatedStats.focusTime;
             const totalCompleted = updatedStats.tasksCompleted.totalCompleted;
@@ -303,13 +251,16 @@ exports.CompleteTask = async (req, res) => {
             const habitStreak = updatedStats.habitStreak;
             const totalDistractions = updatedStats.totalDistractions || 0;
 
+
             const completionRate = totalTasks > 0 ? totalCompleted / totalTasks : 0;
+
 
             const normFocusSessions = Math.min(focusSessions / 10, 1); // 10 sessions = max
             const normFocusTime = Math.min(focusTime / 600, 1);        // 600 min (10h) = max
             const normCompletionRate = completionRate;                 // already 0-1
             const normStreak = Math.min(habitStreak / 30, 1);          // 30 days = max
             const normDistractions = Math.min(totalDistractions / 50, 1); // 50 distractions = max
+
 
             const productivityScore = (
                 0.3 * normFocusSessions +
@@ -349,6 +300,8 @@ exports.CompleteTask = async (req, res) => {
                 message: 'failed to update Completed tasks'
             });
         }
+
+
     } catch (err) {
         console.log('failed to update Completed tasks due to: ', err);
         return res.status(500).json({
@@ -356,6 +309,7 @@ exports.CompleteTask = async (req, res) => {
             error: err.message
         });
     }
+
 };
 
 const Streak = async (userId) => {
@@ -411,18 +365,7 @@ exports.GetAllStats = async (req, res) => {
         }
 
         // Ensure productivityByHour is properly initialized
-        if (!stats.productivityByHour || !Array.isArray(stats.productivityByHour) || stats.productivityByHour.length === 0) {
-            console.log('Initializing productivityByHour for user:', userId);
-            stats.productivityByHour = Array.from({ length: 24 }, (_, i) => ({
-                hour: i,
-                tasksCompleted: 0,
-                focusTime: 0,
-                productivityScore: 0
-            }));
-            await stats.save();
-        }
-
-        console.log('Returning productivityByHour data:', JSON.stringify(stats.productivityByHour).substring(0, 100) + '...');
+        const productivityByHour = await ensureProductivityByHour(userId);
 
         return res.status(200).json({
             message: 'Stats fetched successfully!',
@@ -436,7 +379,7 @@ exports.GetAllStats = async (req, res) => {
                 xp: stats.xp,
                 lastActiveDate: stats.lastActiveDate,
                 dailyActivity: Object.fromEntries(stats.dailyActivity),
-                productivityByHour: stats.productivityByHour
+                productivityByHour: productivityByHour || stats.productivityByHour
             }
         });
     } catch (err) {
@@ -960,67 +903,6 @@ exports.getAchievements = async (req, res) => {
         });
     }
 
-};
-
-// Add this function to seed hourly productivity data
-exports.SeedHourlyData = async (req, res) => {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-        const userId = req.user._id;
-
-        // Get current stats
-        const stats = await Stats.findOne({ userId });
-        if (!stats) {
-            return res.status(404).json({ message: 'Stats not found for this user.' });
-        }
-
-        // Initialize or reset productivityByHour with test data
-        const testData = Array.from({ length: 24 }, (_, hour) => {
-            // Generate more productivity during work hours (9am-5pm)
-            const isWorkHour = hour >= 9 && hour <= 17;
-            // Generate more productivity in morning and evening for evening people
-            const isMorningOrEvening = hour >= 7 && hour <= 10 || hour >= 19 && hour <= 22;
-
-            // Base productivity that increases during work hours
-            const baseScore = isWorkHour ?
-                Math.floor(30 + Math.random() * 50) : // Work hours: 30-80
-                Math.floor(Math.random() * 30);      // Non-work hours: 0-30
-
-            // Focus time is higher during work hours
-            const focusTime = isWorkHour ?
-                Math.floor(20 + Math.random() * 40) : // Work hours: 20-60 minutes
-                Math.floor(Math.random() * 20);      // Non-work hours: 0-20 minutes
-
-            // Tasks completed are higher during work hours
-            const tasksCompleted = isWorkHour ?
-                Math.floor(1 + Math.random() * 3) :   // Work hours: 1-3 tasks
-                Math.floor(Math.random() * 1.5);     // Non-work hours: 0-1 tasks
-
-            return {
-                hour,
-                focusTime: focusTime,
-                tasksCompleted: tasksCompleted,
-                productivityScore: baseScore
-            };
-        });
-
-        // Update the stats with test data
-        stats.productivityByHour = testData;
-        await stats.save();
-
-        return res.status(200).json({
-            message: 'Hourly productivity data seeded successfully!',
-            productivityByHour: stats.productivityByHour
-        });
-    } catch (err) {
-        console.log('Failed to seed hourly data due to: ', err);
-        return res.status(500).json({
-            message: 'Server error',
-            error: err.message
-        });
-    }
 };
 
 

@@ -7,25 +7,47 @@ const aiService = require('../services/ai.service');
  */
 exports.analyzePdf = async (req, res) => {
     try {
+        console.log('Received analyze-pdf request with body:', JSON.stringify(req.body));
+
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { fileId, lectureId, subjectId, title } = req.body;
 
-        if (!fileId || !lectureId || !subjectId || !title) {
-            return res.status(400).json({ error: 'Missing required parameters' });
+        // Check each parameter individually and provide specific error messages
+        const missingParams = [];
+        if (!fileId) missingParams.push('fileId');
+        if (!lectureId) missingParams.push('lectureId');
+        if (!subjectId) missingParams.push('subjectId');
+        if (!title) missingParams.push('title');
+
+        if (missingParams.length > 0) {
+            console.error(`Missing parameters: ${missingParams.join(', ')}`);
+            return res.status(400).json({
+                error: 'Missing required parameters',
+                missingParams: missingParams
+            });
         }
 
         console.log(`Analyzing PDF: fileId=${fileId}, lectureId=${lectureId}, subjectId=${subjectId}, title=${title}`);
 
-        const result = await aiService.analyzePdfFromGCS(fileId, lectureId, subjectId, title, req.user);
+        try {
+            const result = await aiService.analyzePdfFromGCS(fileId, lectureId, subjectId, title, req.user);
 
-        res.status(200).json({
-            success: true,
-            message: 'PDF analyzed successfully',
-            ...result
-        });
+            res.status(200).json({
+                success: true,
+                message: 'PDF analyzed successfully',
+                ...result
+            });
+        } catch (serviceError) {
+            console.error('Error in AI service:', serviceError);
+            res.status(500).json({
+                error: 'Failed to analyze PDF',
+                message: serviceError.message,
+                details: 'Error occurred in the AI service'
+            });
+        }
     } catch (error) {
         console.error('Error in analyzePdf controller:', error);
         res.status(500).json({ error: 'Failed to analyze PDF', message: error.message });
