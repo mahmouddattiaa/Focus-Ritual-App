@@ -323,4 +323,125 @@ exports.analyzePdf = async (req, res) => {
         console.error('Unexpected error in analyzePdf controller:', error);
         res.status(500).send({ message: 'An unexpected error occurred.' });
     }
+};
+
+// Delete file from cloud storage and database
+exports.deleteFile = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const fileId = req.params.fileId;
+        const userId = req.user._id;
+
+        console.log(`Attempting to delete file with ID: ${fileId} for user: ${userId}`);
+
+        // First, find the file in the database
+        const file = await UploadedFile.findOne({
+            _id: fileId,
+            user_id: userId
+        });
+
+        if (!file) {
+            console.log(`File not found with ID: ${fileId}`);
+            return res.status(404).json({
+                success: false,
+                message: 'File not found'
+            });
+        }
+
+        // Delete the file from Google Cloud Storage
+        try {
+            const gcsFile = gcs.file(file.file_path);
+            await gcsFile.delete();
+            console.log(`Deleted file from GCS: ${file.file_path}`);
+        } catch (gcsError) {
+            console.error('Error deleting file from GCS:', gcsError);
+            // Continue with database deletion even if GCS deletion fails
+        }
+
+        // Delete file from database
+        await UploadedFile.deleteOne({ _id: fileId });
+        console.log(`Deleted file metadata from database with ID: ${fileId}`);
+
+        // Delete any associated lecture content
+        const deletedContent = await LectureContent.deleteMany({ file_id: fileId });
+        console.log(`Deleted ${deletedContent.deletedCount} lecture content entries associated with file`);
+
+        res.status(200).json({
+            success: true,
+            message: 'File deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error in deleteFile controller:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete file',
+            error: error.message
+        });
+    }
+};
+
+// Check if a file exists in cloud storage
+exports.checkFileExists = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const fileId = req.params.fileId;
+        const userId = req.user._id;
+
+        console.log(`Checking if file exists with ID: ${fileId} for user: ${userId}`);
+
+        // Find the file in the database
+        const file = await UploadedFile.findOne({
+            _id: fileId,
+            user_id: userId
+        });
+
+        if (!file) {
+            console.log(`File not found in database with ID: ${fileId}`);
+            return res.status(404).json({
+                success: false,
+                exists: false,
+                message: 'File not found in database'
+            });
+        }
+
+        // Check if the file exists in Google Cloud Storage
+        try {
+            const gcsFile = gcs.file(file.file_path);
+            const [exists] = await gcsFile.exists();
+
+            console.log(`File ${file.file_path} exists in GCS: ${exists}`);
+
+            res.status(200).json({
+                success: true,
+                exists: exists,
+                file: {
+                    id: file._id,
+                    name: file.file_name,
+                    path: file.file_path
+                }
+            });
+        } catch (gcsError) {
+            console.error('Error checking if file exists in GCS:', gcsError);
+            res.status(500).json({
+                success: false,
+                exists: false,
+                message: 'Error checking if file exists in cloud storage',
+                error: gcsError.message
+            });
+        }
+    } catch (error) {
+        console.error('Error in checkFileExists controller:', error);
+        res.status(500).json({
+            success: false,
+            exists: false,
+            message: 'Failed to check if file exists',
+            error: error.message
+        });
+    }
 }; 

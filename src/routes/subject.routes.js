@@ -1,21 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const {
-    getSubjects,
-    createSubject,
-    updateSubject,
-    deleteSubject,
-    createLecture,
-    updateLecture,
-    deleteLecture,
-} = require('../controllers/subject.controller');
+const subjectController = require('../controllers/subject.controller');
+const lectureController = require('../controllers/lecture.controller');
 
-const auth = passport.authenticate('jwt', { session: false });
+// Subject routes
+router.get('/', passport.authenticate('jwt', { session: false }), subjectController.getSubjects);
+router.post('/', passport.authenticate('jwt', { session: false }), subjectController.createSubject);
 
-router.route('/').get(auth, getSubjects).post(auth, createSubject);
-router.route('/:id').put(auth, updateSubject).delete(auth, deleteSubject);
-router.route('/:id/lectures').post(auth, createLecture);
-router.route('/lectures/:id').put(auth, updateLecture).delete(auth, deleteLecture);
+// Lecture routes within a subject
+router.post('/:subjectId/lectures', passport.authenticate('jwt', { session: false }), lectureController.createLecture);
+
+// Lecture routes
+router.delete('/lectures/:id', passport.authenticate('jwt', { session: false }), lectureController.deleteLecture);
 
 module.exports = router; 

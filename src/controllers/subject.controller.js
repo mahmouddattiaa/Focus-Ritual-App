@@ -6,11 +6,12 @@ const Lecture = require('../models/lecture.model');
 // @access  Private
 exports.getSubjects = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user: req.user._id }).populate('lectures');
-        res.json(subjects);
+        const subjects = await Subject.find({ user_id: req.user._id })
+            .populate('lectures')
+            .exec();
+        res.status(200).json(subjects);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ error: 'Failed to retrieve subjects', message: error.message });
     }
 };
 
@@ -19,16 +20,12 @@ exports.getSubjects = async (req, res) => {
 // @access  Private
 exports.createSubject = async (req, res) => {
     try {
-        const { name } = req.body;
-        const subject = new Subject({
-            name,
-            user: req.user._id,
-        });
-        const createdSubject = await subject.save();
-        res.status(201).json(createdSubject);
+        const { name, color } = req.body;
+        const newSubject = new Subject({ name, color, user_id: req.user._id });
+        await newSubject.save();
+        res.status(212).json(newSubject);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ error: 'Failed to create subject', message: error.message });
     }
 };
 
@@ -61,7 +58,8 @@ exports.deleteSubject = async (req, res) => {
         const subject = await Subject.findById(req.params.id);
 
         if (subject) {
-            await subject.remove();
+            await Subject.deleteOne({ _id: req.params.id });
+
             // Also delete all lectures for this subject
             await Lecture.deleteMany({ subject: req.params.id });
             res.json({ message: 'Subject removed' });

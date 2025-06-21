@@ -1,26 +1,31 @@
 const mongoose = require('mongoose');
 
 const subjectSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true,
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    color: { type: String, default: '#8884d8' },
+    lectures: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Lecture' }]
 }, {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    timestamps: true,
+    toJSON: {
+        virtuals: true,
+        transform: (doc, ret) => {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+        }
+    },
+    toObject: {
+        virtuals: true,
+        transform: (doc, ret) => {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+        }
+    }
 });
 
-subjectSchema.virtual('lectures', {
+subjectSchema.virtual('lecturesList', {
     ref: 'Lecture',
     localField: '_id',
     foreignField: 'subject',

@@ -9,7 +9,7 @@ router.post('/analyze-pdf', passport.authenticate('jwt', { session: false }), ai
 // Route for retrieving lecture content
 router.get('/lecture-content/:lectureId', passport.authenticate('jwt', { session: false }), aiController.getLectureContent);
 
-// Route for checking processing status
-router.get('/processing-status/:lectureId', passport.authenticate('jwt', { session: false }), aiController.getProcessingStatus);
+// Route for checking job status
+router.get('/job-status/:jobId', passport.authenticate('jwt', { session: false }), aiController.getJobStatus);
 
 module.exports = router; 

@@ -393,4 +393,10 @@ router.get('/content/:lectureId', passport.authenticate('jwt', { session: false 
 // Get all subjects and lectures with content
 router.get('/subjects-lectures', auth, libraryController.getAllSubjectsAndLectures);
 
+// Delete file from cloud storage and database
+router.delete('/file/:fileId', auth, libraryController.deleteFile);
+
+// Check if a file exists in cloud storage
+router.get('/file/:fileId/check', auth, libraryController.checkFileExists);
+
 module.exports = router;

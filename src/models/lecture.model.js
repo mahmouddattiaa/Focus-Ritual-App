@@ -17,15 +17,31 @@ const lectureSchema = new mongoose.Schema({
         required: true,
     },
     fileId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UploadedFile',
     },
     contentId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LectureContent',
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
+}, {
+    timestamps: true,
+    toJSON: {
+        virtuals: true,
+        transform: (doc, ret) => {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+        }
     },
+    toObject: {
+        virtuals: true,
+        transform: (doc, ret) => {
+            ret.id = ret._id;
+            delete ret._id;
+            delete ret.__v;
+        }
+    }
 });
 
 const Lecture = mongoose.model('Lecture', lectureSchema);

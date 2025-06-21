@@ -8,8 +8,13 @@ const passport = require('passport');
 const path = require('path');
 const mongoose = require('mongoose');
 
+// Helper function to sanitize folder names
+const sanitize = (name) => {
+    return name.replace(/[^a-zA-Z0-9-_\.]/g, '_').substring(0, 100);
+};
+
 // Helper function to get file download URL (now using async/await)
-const getFileDownloadUrl = async(key) => {
+const getFileDownloadUrl = async (key) => {
     if (!key) return null;
     return await getSignedUrl(key);
 };
@@ -23,7 +28,7 @@ router.use((req, res, next) => {
     next();
 });
 
-router.post('/upload', passport.authenticate('jwt', { session: false }), upload.single('file'), async(req, res) => {
+router.post('/upload', passport.authenticate('jwt', { session: false }), upload.single('file'), async (req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -56,8 +61,16 @@ router.post('/upload', passport.authenticate('jwt', { session: false }), upload.
         const fileContent = await fs.readFile(file.path);
         console.log('File read successfully, size:', fileContent.length);
 
-        const folderName = req.body.folderName || 'default_library'; // Get folder name from request body, default to 'default_library'
-        const key = `library/${userId}/${folderName}/${file.filename}`;
+        const subjectName = sanitize(req.body.folderName || 'default_subject');
+        const lectureName = sanitize(req.body.lectureName || 'default_lecture');
+
+        // Get lectureId if available
+        const lectureId = req.body.lectureId || 'unknown_lecture';
+
+        // Use lectureId in the path if available
+        const key = `library/${userId}/${subjectName}/${lectureId}/${file.filename}`;
+
+        console.log(`Storing file at path: ${key}`);
 
         // Upload to Google Cloud Storage
         const gcsFile = gcs.file(key);
@@ -130,7 +143,7 @@ router.post('/upload', passport.authenticate('jwt', { session: false }), upload.
     }
 });
 
-router.get('/file/:id', passport.authenticate('jwt', { session: false }), async(req, res) => {
+router.get('/file/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         // First check if this is a library file ID
         let fileId = req.params.id;
@@ -196,7 +209,7 @@ router.get('/file/:id', passport.authenticate('jwt', { session: false }), async(
     }
 });
 
-router.get('/files', passport.authenticate('jwt', { session: false }), async(req, res) => {
+router.get('/files', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const userId = req.user._id;
         const files = await UploadedFile.find({ user_id: userId });
