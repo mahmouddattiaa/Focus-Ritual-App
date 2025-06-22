@@ -24,6 +24,7 @@ const subjectRoutes = require('./routes/subject.routes');
 const friendRoutes = require('./routes/friends.routes');
 const User = require('./models/user.model');
 const messageRoutes = require('./routes/message.route');
+const feedRoutes = require('./routes/feed.routes');
 // Debug environment variables
 console.log("Environment variables:");
 console.log("PORT:", process.env.PORT);
@@ -100,7 +101,8 @@ app.use('/api/friends', friendRoutes);
 // Mount upload routes at both /api/up and /up for compatibility
 app.use('/api/up', uploadRoutes);
 app.use('/up', uploadRoutes); // Add this route for direct access without /api prefix
-app.use('/messages', messageRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/feed',feedRoutes);
 // Use a fallback for MongoDB URI
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
