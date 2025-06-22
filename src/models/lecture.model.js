@@ -20,6 +20,10 @@ const lectureSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'UploadedFile',
     },
+    fileIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UploadedFile',
+    }],
     contentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'LectureContent',

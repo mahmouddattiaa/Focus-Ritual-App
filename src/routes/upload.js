@@ -3,6 +3,7 @@ const router = express.Router();
 const { gcs, bucket, getSignedUrl } = require('../config/gcs');
 const upload = require('../middleware/upload');
 const { UploadedFile, LibraryFile } = require('../models/models');
+const Lecture = require('../models/lecture.model');
 const fs = require('fs').promises;
 const passport = require('passport');
 const path = require('path');
@@ -108,6 +109,41 @@ router.post('/upload', passport.authenticate('jwt', { session: false }), upload.
         } catch (dbError) {
             console.error('Error creating library file entry:', dbError);
             // Continue even if library integration fails
+        }
+
+        // If lectureId is provided, update the lecture with the file ID
+        if (lectureId && lectureId !== 'unknown_lecture') {
+            try {
+                console.log(`Updating lecture ${lectureId} with file ID ${uploadedFile._id}`);
+
+                // Find the lecture and update it
+                const lecture = await Lecture.findById(lectureId);
+
+                if (lecture) {
+                    // Add to fileIds array if it doesn't already exist
+                    if (!lecture.fileIds) {
+                        lecture.fileIds = [];
+                    }
+
+                    // Check if the file ID is already in the array
+                    if (!lecture.fileIds.includes(uploadedFile._id)) {
+                        lecture.fileIds.push(uploadedFile._id);
+                    }
+
+                    // For backward compatibility, also set fileId if it's not set
+                    if (!lecture.fileId) {
+                        lecture.fileId = uploadedFile._id;
+                    }
+
+                    await lecture.save();
+                    console.log(`Updated lecture ${lectureId} with file ID ${uploadedFile._id}`);
+                } else {
+                    console.log(`Lecture with ID ${lectureId} not found`);
+                }
+            } catch (lectureError) {
+                console.error('Error updating lecture with file ID:', lectureError);
+                // Continue even if lecture update fails
+            }
         }
 
         // Try to delete the file, but don't fail if it doesn't work

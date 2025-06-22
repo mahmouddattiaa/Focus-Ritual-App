@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const lectureContentSchema = new mongoose.Schema({
     user_id: { type: mongoose.Schema.Types.ObjectId, required: true },
     file_id: { type: mongoose.Schema.Types.ObjectId, ref: 'UploadedFile' },
+    file_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'UploadedFile' }],
     lecture_id: { type: String, required: true },
     subject_id: { type: String, required: true },
     title: { type: String, required: true },

@@ -11,10 +11,13 @@ exports.analyzePdf = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const { fileId, lectureId, subjectId, title } = req.body;
+        const { fileId, fileIds, lectureId, subjectId, title } = req.body;
+
+        // Handle both single fileId and array of fileIds
+        const filesToProcess = fileIds || (fileId ? [fileId] : []);
 
         const missingParams = [];
-        if (!fileId) missingParams.push('fileId');
+        if (filesToProcess.length === 0) missingParams.push('fileId or fileIds');
         if (!lectureId) missingParams.push('lectureId');
         if (!subjectId) missingParams.push('subjectId');
         if (!title) missingParams.push('title');
@@ -26,7 +29,7 @@ exports.analyzePdf = async (req, res) => {
             });
         }
 
-        const { jobId } = await aiService.analyzePdfFromGCS(fileId, lectureId, subjectId, title, req.user);
+        const { jobId } = await aiService.analyzePdfsFromGCS(filesToProcess, lectureId, subjectId, title, req.user);
 
         res.status(202).json({
             success: true,

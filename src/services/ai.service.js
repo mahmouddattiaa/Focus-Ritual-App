@@ -5,6 +5,7 @@ const { UploadedFile, LibraryFile } = require('../models/models');
 const LectureContent = require('../models/lectureContent.model');
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
+const Lecture = require('../models/lecture.model');
 
 // Create a temporary store for tracking processing status
 const processingStatus = new Map();
@@ -77,6 +78,21 @@ const processPdfInBackground = async (jobId, fileId, lectureId, subjectId, title
         });
         await lectureContent.save();
 
+        // Update the lecture with the content ID
+        try {
+            if (mongoose.Types.ObjectId.isValid(lectureId)) {
+                const lecture = await Lecture.findById(lectureId);
+                if (lecture) {
+                    lecture.contentId = lectureContent._id;
+                    await lecture.save();
+                    console.log(`Job ${jobId}: Updated lecture ${lectureId} with content ID ${lectureContent._id}`);
+                }
+            }
+        } catch (lectureError) {
+            console.error(`Job ${jobId}: Error updating lecture with content ID:`, lectureError);
+            // Continue even if lecture update fails
+        }
+
         setJobProcessingStatus(jobId, 'completed', 100, 'Content generated successfully!', { contentId: lectureContent._id });
 
     } catch (error) {
@@ -102,6 +118,106 @@ const analyzePdfFromGCS = async (fileId, lectureId, subjectId, title, user) => {
 
     // Run the actual processing in the background, not awaiting it.
     processPdfInBackground(jobId, fileId, lectureId, subjectId, title, user);
+
+    return { jobId };
+};
+
+/**
+ * Processes multiple PDFs in the background and combines their content.
+ */
+const processMultiplePdfsInBackground = async (jobId, fileIds, lectureId, subjectId, title, user) => {
+    try {
+        setJobProcessingStatus(jobId, 'processing', 5, 'Starting analysis of multiple PDFs...');
+        console.log(`Job ${jobId}: Processing multiple PDFs: ${fileIds.join(', ')}`);
+
+        let allDocumentText = '';
+
+        // Process each file and combine their text
+        for (let i = 0; i < fileIds.length; i++) {
+            const fileId = fileIds[i];
+            const fileProgress = 5 + Math.floor((i / fileIds.length) * 35); // Progress from 5% to 40%
+
+            setJobProcessingStatus(jobId, 'processing', fileProgress,
+                `Processing PDF ${i + 1} of ${fileIds.length}: ${fileId}`);
+
+            const uploadedFileId = await getUploadedFileId(fileId, user);
+            const fileDoc = await UploadedFile.findById(uploadedFileId);
+
+            if (!fileDoc) {
+                console.warn(`File not found in database with ID: ${uploadedFileId}, skipping`);
+                continue;
+            }
+
+            try {
+                const documentText = await downloadAndParsePdf(jobId, fileDoc);
+                allDocumentText += documentText + '\n\n--- Next Document ---\n\n';
+                console.log(`Job ${jobId}: Added ${documentText.length} characters from file ${fileId}`);
+            } catch (error) {
+                console.error(`Job ${jobId}: Error processing file ${fileId}:`, error);
+                // Continue with other files even if one fails
+            }
+        }
+
+        if (allDocumentText.length === 0) {
+            throw new Error('Could not extract text from any of the provided PDFs');
+        }
+
+        setJobProcessingStatus(jobId, 'processing', 40, 'Generating AI content from combined documents... This may take a moment.');
+
+        const aiContent = await generateAiContentFromText(jobId, title, allDocumentText);
+
+        setJobProcessingStatus(jobId, 'processing', 90, 'Saving content to database...');
+
+        const lectureContent = new LectureContent({
+            user_id: user._id,
+            file_ids: fileIds,
+            lecture_id: lectureId,
+            subject_id: subjectId,
+            title: title,
+            ...aiContent
+        });
+        await lectureContent.save();
+
+        // Update the lecture with the content ID
+        try {
+            if (mongoose.Types.ObjectId.isValid(lectureId)) {
+                const lecture = await Lecture.findById(lectureId);
+                if (lecture) {
+                    lecture.contentId = lectureContent._id;
+                    await lecture.save();
+                    console.log(`Job ${jobId}: Updated lecture ${lectureId} with content ID ${lectureContent._id}`);
+                }
+            }
+        } catch (lectureError) {
+            console.error(`Job ${jobId}: Error updating lecture with content ID:`, lectureError);
+            // Continue even if lecture update fails
+        }
+
+        setJobProcessingStatus(jobId, 'completed', 100, 'Content generated successfully!', { contentId: lectureContent._id });
+
+    } catch (error) {
+        console.error(`Error processing job ${jobId}:`, error);
+        setJobProcessingStatus(jobId, 'failed', 0, `Error: ${error.message}`);
+    }
+};
+
+/**
+ * Kicks off the analysis of multiple PDFs from GCS by creating a background job.
+ * @param {string[]} fileIds - The IDs of the uploaded files in the database
+ * @param {string} lectureId - The ID of the lecture in the frontend
+ * @param {string} subjectId - The ID of the subject in the frontend
+ * @param {string} title - The title of the lecture
+ * @param {Object} user - The user object
+ * @returns {Promise<{jobId: string}>} - The ID of the created job
+ */
+const analyzePdfsFromGCS = async (fileIds, lectureId, subjectId, title, user) => {
+    const jobId = uuidv4();
+    console.log(`Created job ${jobId} for lecture ${lectureId} with ${fileIds.length} files`);
+
+    setJobProcessingStatus(jobId, 'queued', 0, 'Your request is in the queue.');
+
+    // Run the actual processing in the background, not awaiting it.
+    processMultiplePdfsInBackground(jobId, fileIds, lectureId, subjectId, title, user);
 
     return { jobId };
 };
@@ -239,7 +355,7 @@ const getContentProcessingStatus = (lectureId) => {
 
 module.exports = {
     analyzePdfFromGCS,
-    getLectureContent,
-    getContentProcessingStatus,
-    getJobProcessingStatus
+    analyzePdfsFromGCS,
+    getJobProcessingStatus,
+    getLectureContent
 }; 
