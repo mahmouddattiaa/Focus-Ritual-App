@@ -12,7 +12,21 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
     
     for (const stats of allStats) {
       let modified = false;
-      
+      const tasksToRemove = [];
+      for(const task of stats.tasks)
+      {
+        if(task.completed === true){
+           tasksToRemove.push(task._id);
+          if(!modified)
+          {
+          modified = true;
+          }
+        }
+      }
+      for(const taskId of tasksToRemove)
+      {
+        stats.tasks.pull({_id:taskId});
+      }
     
       for (const habit of stats.habits) {
        
@@ -64,6 +78,7 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
           }
         }
       }
+      
       
      
       if (modified) {

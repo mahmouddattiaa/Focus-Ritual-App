@@ -97,6 +97,10 @@ const StatsSchema = new mongoose.Schema({
                     default: []
 
 
+                },
+                completed: {
+                    type: Boolean,
+                    default: false
                 }
 
             }

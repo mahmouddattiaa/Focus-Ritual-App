@@ -204,6 +204,7 @@ exports.CompleteTask = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         const userId = req.user._id;
+        const {taskId} = req.body;
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
         const currentHour = today.getHours();
@@ -214,13 +215,19 @@ exports.CompleteTask = async (req, res) => {
                 message: 'cannot complete task when there are no tasks to complete'
             });
         }
+        const tasks = stats.tasks;
 
         // Prepare update operation with productivityByHour increments
         const updateOperation = {
+         
             $inc: {
                 'tasksCompleted.totalCompleted': 1,
                 [`dailyActivity.${dateKey}.tasksCompleted`]: 1,
                 [`productivityByHour.${currentHour}.tasksCompleted`]: 1
+                
+            },
+            $set: {
+                'tasks.$.completed' : true
             }
         };
 
@@ -235,7 +242,7 @@ exports.CompleteTask = async (req, res) => {
         }
 
         const updatedStats = await Stats.findOneAndUpdate(
-            { userId },
+            { userId, 'tasks._id': taskId },
             updateOperation,
             {
                 new: true,
@@ -397,7 +404,9 @@ exports.DecTasks = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         const userId = req.user._id;
+        const {taskId} = req.body;
         const stats = await Stats.findOne({ userId });
+        const tasks = stats.tasks;
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
         if (stats.tasksCompleted.totalCompleted <= 0) {
@@ -411,12 +420,15 @@ exports.DecTasks = async (req, res) => {
         }
 
         const updatedStats = await Stats.findOneAndUpdate(
-            { userId },
+            { userId, 'tasks._id': taskId },
             {
                 $inc: {
                     'tasksCompleted.totalCompleted': -1,
                     ...updatedaily
                 },
+                $set:{
+                    'tasks.$.completed' : false
+                }
 
             },
             { new: true, upsert: true }
