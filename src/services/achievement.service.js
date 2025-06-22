@@ -3,7 +3,6 @@ const EventEmitter = require('events');
 const {Stats, achievementEmitter, levelThresholds} = require('../models/stats.model');
 console.log('Achievement emitter imported:', achievementEmitter);
 const Achievement = require('../models/achievement.model');
-const service = require('./websocket.service');
 
 achievementEmitter.on('focus:session:completed', async ({ userId, sessionCount }) => {
     const milestones = [1, 10, 50, 100, 500];
@@ -127,7 +126,8 @@ async function checkAndAwardAchievement(userId, category, criteria, type) {
                 stats.xp+=achievement.xp;
             }
             await stats.save();
-            service.emitAchievementUnlocked(userId, achievement);
+            // Directly require and call the function from server.js to avoid circular dependencies
+            require('../server.js').emitAchievementUnlocked(userId, achievement);
             
         }
         else {

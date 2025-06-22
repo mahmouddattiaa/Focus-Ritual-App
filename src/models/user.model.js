@@ -91,6 +91,10 @@ const UserSchema = new mongoose.Schema({
             default: false
         }
 
+    },
+    online:{
+        type: Boolean,
+        default:false
     }
 },
     {
