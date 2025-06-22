@@ -6,11 +6,13 @@ const Lecture = require('../models/lecture.model');
 // @access  Private
 exports.getSubjects = async (req, res) => {
     try {
+        console.log('Getting subjects for user:', req.user._id);
         const subjects = await Subject.find({ user: req.user._id }).populate('lectures');
+        console.log('Found subjects:', subjects);
         res.json(subjects);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error getting subjects:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -20,15 +22,20 @@ exports.getSubjects = async (req, res) => {
 exports.createSubject = async (req, res) => {
     try {
         const { name } = req.body;
+        console.log('Creating subject with name:', name, 'for user:', req.user._id);
+
         const subject = new Subject({
             name,
             user: req.user._id,
+            color: req.body.color || '#8884d8'
         });
+
         const createdSubject = await subject.save();
+        console.log('Created subject:', createdSubject);
         res.status(201).json(createdSubject);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error creating subject:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -58,19 +65,25 @@ exports.updateSubject = async (req, res) => {
 // @access  Private
 exports.deleteSubject = async (req, res) => {
     try {
+        console.log('Deleting subject with ID:', req.params.id);
         const subject = await Subject.findById(req.params.id);
 
         if (subject) {
-            await subject.remove();
+            // Use deleteOne instead of remove (which is deprecated)
+            await Subject.deleteOne({ _id: req.params.id });
+
             // Also delete all lectures for this subject
             await Lecture.deleteMany({ subject: req.params.id });
+
+            console.log('Subject and related lectures deleted successfully');
             res.json({ message: 'Subject removed' });
         } else {
+            console.log('Subject not found with ID:', req.params.id);
             res.status(404).json({ message: 'Subject not found' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error deleting subject:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -119,16 +132,29 @@ exports.updateLecture = async (req, res) => {
 // @access  Private
 exports.deleteLecture = async (req, res) => {
     try {
+        console.log('Deleting lecture with ID:', req.params.id);
         const lecture = await Lecture.findById(req.params.id);
 
         if (lecture) {
-            await lecture.remove();
+            // Use deleteOne instead of remove (which is deprecated)
+            await Lecture.deleteOne({ _id: req.params.id });
+
+            // Also update the subject to remove this lecture reference
+            if (lecture.subject) {
+                await Subject.updateOne(
+                    { _id: lecture.subject },
+                    { $pull: { lectures: req.params.id } }
+                );
+            }
+
+            console.log('Lecture deleted successfully');
             res.json({ message: 'Lecture removed' });
         } else {
+            console.log('Lecture not found with ID:', req.params.id);
             res.status(404).json({ message: 'Lecture not found' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error('Error deleting lecture:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 }; 

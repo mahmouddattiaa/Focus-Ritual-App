@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const subjectSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
     color: { type: String, default: '#8884d8' },
     lectures: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Lecture' }]
