@@ -11,7 +11,7 @@ require('./services/achievement.service');
 const habitResetJob = require('./controllers/scheduler');
 // Configure dotenv with explicit path
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const Message = require('./models/messages.model'); 
+const Message = require('./models/messages.model');
 const authRoutes = require('./routes/auth.routes');
 const configurePassport = require('./config/passport');
 const uploadRoutes = require('./routes/upload');
@@ -37,15 +37,18 @@ const server = http.createServer(app);
 // initializeWebSocket(server); // <--- REMOVED THIS DUPLICATE INITIALIZATION
 const io = new Server(server, {
     cors: {
-        origin: "*", // Set to wildcard for testing, can be tightened later
-        methods: ["GET", "POST"]
-    }
+        origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"], // Updated to match frontend URLs
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+    },
+    transports: ['websocket', 'polling']
 });
 
 io.use(async (socket, next) => {
     // Look for the token in the standard Authorization header first.
     const authHeader = socket.handshake.headers.authorization;
-    
+
     // Fallback to checking the auth object for browser clients.
     const tokenFromAuth = socket.handshake.auth.token;
 
@@ -102,7 +105,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/up', uploadRoutes);
 app.use('/up', uploadRoutes); // Add this route for direct access without /api prefix
 app.use('/api/messages', messageRoutes);
-app.use('/api/feed',feedRoutes);
+app.use('/api/feed', feedRoutes);
 // Use a fallback for MongoDB URI
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
@@ -167,11 +170,10 @@ io.on('connection', async (socket) => {
     });
     socket.join(userId);
     const user = await User.findById(socket.user._id);
-    if(!connectedUsers.has(userId))
-    {
+    if (!connectedUsers.has(userId)) {
 
         connectedUsers.set(userId, new Set());
-        await User.findByIdAndUpdate(userId, {online:true}, {new: true});
+        await User.findByIdAndUpdate(userId, { online: true }, { new: true });
 
     }
     connectedUsers.get(userId).add(socket.id);
@@ -185,8 +187,8 @@ io.on('connection', async (socket) => {
         };
         socket.to(data.roomCode).emit('receive_message', messageData);
     });
-    socket.on('private_message', async(data) =>{
-        const { recipientId, content }= data;
+    socket.on('private_message', async (data) => {
+        const { recipientId, content } = data;
         const senderId = socket.user._id;
         const recipientIsViewing = activeChats.get(recipientId) === senderId.toString();
         const message = new Message({
@@ -197,46 +199,44 @@ io.on('connection', async (socket) => {
         });
         console.log(`${senderId} sending message to ${recipientId}`);
         await message.save();
-    
-      
-            io.to(recipientId).emit('new_private_message', message);
-       
-            io.to(userId).emit('new_private_message', message);
+
+
+        io.to(recipientId).emit('new_private_message', message);
+
+        io.to(userId).emit('new_private_message', message);
     })
-    socket.on('open chat', async (data) =>{
-        const {friendId} = data;
-        try{
+    socket.on('open chat', async (data) => {
+        const { friendId } = data;
+        try {
             activeChats.set(userId, friendId);
-            await Message.updateMany({recipient:userId, sender: friendId, read: false}, {$set:{read:true}});
+            await Message.updateMany({ recipient: userId, sender: friendId, read: false }, { $set: { read: true } });
             console.log(`message from ${friendId} to ${userId} has been read`);
-           
-        
-                io.to(friendId).emit('seen_message', {readerId: userId} );
-          
-        }catch (error) {
-          
+
+
+            io.to(friendId).emit('seen_message', { readerId: userId });
+
+        } catch (error) {
+
             console.error("error with opening chat due to :", error);
         }
     })
     socket.on('close chat', () => {
-    
+
         console.log(`${userId} closed their chat window.`);
-  
+
         activeChats.delete(userId);
     });
     socket.on('disconnect', async () => {
         console.log('user disconnected', socket.id);
         activeChats.delete(userId);
-        if(connectedUsers.has(userId))
-        {
-        connectedUsers.get(userId).delete(socket.id);
-        if(connectedUsers.get(userId).size===0)
-        {
-            connectedUsers.delete(userId);
-     await User.findByIdAndUpdate(userId, {online:false}, {new: true});
+        if (connectedUsers.has(userId)) {
+            connectedUsers.get(userId).delete(socket.id);
+            if (connectedUsers.get(userId).size === 0) {
+                connectedUsers.delete(userId);
+                await User.findByIdAndUpdate(userId, { online: false }, { new: true });
+            }
         }
-    }
-    
+
     });
 });
 
