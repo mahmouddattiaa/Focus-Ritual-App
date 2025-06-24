@@ -622,7 +622,8 @@ exports.getTasks = async (req, res) => {
             estimatedTime: task.estimatedTime,
             dueDate: task.dueDate,
             tags: task.tags,
-            subTasks: task.subTasks
+            subTasks: task.subTasks,
+            completed: task.completed
         }));
         if (tasks.length === 0) {
             return res.status(404).json({
