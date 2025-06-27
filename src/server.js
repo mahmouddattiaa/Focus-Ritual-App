@@ -4,6 +4,8 @@ const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const cookieParser = require('cookie-parser');
+
 const notification = require('./models/notification.model');
 const { Server } = require("socket.io");
 const jwt = require('jsonwebtoken');
@@ -87,7 +89,7 @@ const corsOptions = {
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions));
-
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
