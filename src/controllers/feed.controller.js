@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Post = require('../models/post.model.js');
 const fs = require('fs').promises;
 const { gcs } = require('../config/gcs.js');
-
+const {Stats} = require('../models/stats.model');
 
 exports.Post = async (req,res) =>{
 try {
@@ -11,6 +11,7 @@ try {
     }
     const{parentId,content,attachExists, attachType} = req.body;
     const userId = req.user._id;
+    const stats = await Stats.findOne({userId})
     attachment = {}
     if(attachExists === 'true' && req.file)
     {
@@ -47,6 +48,8 @@ try {
     await post.save();
     if(post)
     {
+        stats.pts+=2;
+        await stats.save();
         return res.status(200).json({
             message:' post successfully made',
             post: post
@@ -150,11 +153,17 @@ exports.likePost = async (req, res) =>{
                 message:'there doesnt exist such a post'
                 });
         }
+
+
         if(post.likes.users.some(id => id.toString() === userId.toString())){
             return res.status(400).json({
                 message:'you already liked this post'
                 });
         }
+        const targetId = post.userId;
+        const targetStats = await Stats.findOne({userId: targetId});
+        targetStats.pts+=2;
+        await targetStats.save();
     
 post.likes.users.push(userId);
 post.likes.count++;
@@ -192,6 +201,10 @@ exports.removeLike = async (req, res) => {
                 });
         }
     
+        const targetId = post.userId;
+        const targetStats = await Stats.findOne({userId:targetId});
+        targetStats.pts-=2;
+        await targetStats.save();
 post.likes.users.pull(userId);
 post.likes.count--;
 await post.save();

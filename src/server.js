@@ -4,6 +4,7 @@ const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
 const http = require('http');
+const notification = require('./models/notification.model');
 const { Server } = require("socket.io");
 const jwt = require('jsonwebtoken');
 const { initializeWebSocket } = require('./services/websocket.service');
@@ -148,19 +149,15 @@ mongoose.connect(mongoURI).then(() => {
 
 const PORT = process.env.PORT || 5001;
 
-function emitAchievementUnlocked(userId, achievement) {
+function emitAchievementUnlocked(userId, notif) {
     if (io) {
-        io.to(userId.toString()).emit('achievement:unlocked', {
-            achievement: {
-                title: achievement.title,
-                description: achievement.description,
-                xp: achievement.xp,
-                category: achievement.category
-            }
+        io.to(userId.toString()).emit('notification:achievement:unlocked', {
+          notif
         });
     }
 }
 const activeChats = new Map();
+
 io.on('connection', async (socket) => {
     console.log('a user connected', socket.id);
     const userId = socket.user._id.toString();
@@ -168,6 +165,7 @@ io.on('connection', async (socket) => {
         socket.join(roomCode);
         console.log(`User ${socket.user.firstName} (${socket.id}) joined room ${roomCode}`);
     });
+ 
     socket.join(userId);
     const user = await User.findById(socket.user._id);
     if (!connectedUsers.has(userId)) {
@@ -187,16 +185,35 @@ io.on('connection', async (socket) => {
         };
         socket.to(data.roomCode).emit('receive_message', messageData);
     });
+socket.on('open_notifications', async ()=>{
+    await notification.updateMany({ userId: userId, isRead: false }, { $set: { isRead: true } });
+
+})
+socket.on('close_notifications', async ()=>{
+
+})
     socket.on('private_message', async (data) => {
         const { recipientId, content } = data;
         const senderId = socket.user._id;
         const recipientIsViewing = activeChats.get(recipientId) === senderId.toString();
+        const user = await User.findById(senderId);
         const message = new Message({
             sender: senderId,
             recipient: recipientId,
             content: content,
             read: recipientIsViewing
         });
+        if(!recipientIsViewing){
+            const notif = new notification({
+                userId: recipientId,
+                title: `new message from ${user.firstName}`,
+                description:  message.content,
+
+                
+            })
+            await notif.save();
+            io.to(recipientId).emit('notification:message', notif);
+        }
         console.log(`${senderId} sending message to ${recipientId}`);
         await message.save();
 
@@ -229,6 +246,7 @@ io.on('connection', async (socket) => {
     socket.on('disconnect', async () => {
         console.log('user disconnected', socket.id);
         activeChats.delete(userId);
+
         if (connectedUsers.has(userId)) {
             connectedUsers.get(userId).delete(socket.id);
             if (connectedUsers.get(userId).size === 0) {

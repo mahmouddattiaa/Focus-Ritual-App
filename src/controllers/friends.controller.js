@@ -1,5 +1,7 @@
 const User = require('../models/user.model');
-
+const {Stats} = require('../models/stats.model');
+const Post = require('../models/post.model');
+const Achievement = require('../models/achievement.model');
 exports.addFriend = async (req, res) => {
     try {
         if (!req.user) {
@@ -185,6 +187,12 @@ exports.getFriendInfo = async (req, res) => {
         const userId = req.user._id;
         const { friendId } = req.params;
         const friend = await User.findById(friendId);
+        const friendStats = await Stats.findOne({userId: friendId}).populate('achievements.achievementId', 'title description');
+        if (!friendStats) {
+            return res.status(404).json({ message: 'friend stats not found' });
+        }
+
+        const posts = await Post.find({userId : friendId});
         if (!friend) {
             return res.status(400).json({
                 message: 'friend doesnt exist'
@@ -196,7 +204,12 @@ exports.getFriendInfo = async (req, res) => {
             friendFirstName: friend.firstName,
             friendLastName: friend.lastName,
             friendBio: friend.bio,
-            friendPfp: friend.profilePicture
+            friendPfp: friend.profilePicture,
+            friendLevel: friendStats.level,
+            friendXP: friendStats.xp,
+            friendPts: friendStats.pts,
+            friendAchievements: friendStats.achievements,
+            friendPosts: posts
         })
     } catch (err) {
         console.log('couldnt get friend info due to :', err);

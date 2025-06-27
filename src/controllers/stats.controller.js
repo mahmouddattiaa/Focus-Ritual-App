@@ -1,6 +1,7 @@
 const { Stats } = require('../models/stats.model.js');
 
 const User = require('../models/user.model.js');
+const Notification = require('../models/notification.model');
 
 const ensureProductivityByHour = async (userId) => {
     try {
@@ -918,6 +919,57 @@ exports.getAchievements = async (req, res) => {
 
 };
 
+exports.getLeaderboard = async (req, res) => {
+    try {
+       
+        const topUsers = await Stats.find({})
+            .sort({ pts: -1 })
+            .limit(100)
+            .populate('userId', 'firstName lastName'); 
 
+        
+        const leaderboard = topUsers.map(stat => ({
+            userId: stat.userId._id,
+            firstName: stat.userId.firstName,
+            lastName: stat.userId.lastName,
+            pts: stat.pts
+        }));
+
+        return res.status(200).json({
+            message: 'Top 100 users by points',
+            leaderboard
+        });
+    } catch (err) {
+        console.error('Failed to fetch leaderboard:', err);
+        return res.status(500).json({
+            message: 'Server error',
+            error: err.message
+        });
+    }
+};
+
+
+exports.getNotifications = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+    
+        const notifications = await Notification.find({ userId: req.user._id })
+            .sort({ timestamp: -1 });
+
+        return res.status(200).json({
+            message: 'Notifications fetched successfully',
+            notifications
+        });
+    } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+        return res.status(500).json({
+            message: 'Server error',
+            error: err.message
+        });
+    }
+};
 
 
