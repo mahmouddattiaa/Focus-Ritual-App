@@ -63,6 +63,11 @@ const UserSchema = new mongoose.Schema({
         ],
         default: []
     },
+    refreshToken:{
+        type: String
+    },
+    resetPasswordToken: {type:String},
+resetPasswordExpires: {type:Date},
     settings: {
         profileVisibility: {
             type: String,

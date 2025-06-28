@@ -228,6 +228,10 @@ const StatsSchema = new mongoose.Schema({
         ],
         default: []
     },
+    pts:{
+        type: Number,
+        default: 0
+    },
     productivityByHour: {
         type: [{
             hour: {

@@ -16,6 +16,14 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
       for(const task of stats.tasks)
       {
         if(task.completed === true){
+          if(task.priority === 'low' ||task.priority ==='medium')
+          {
+            stats.pts+=10;
+          }
+          else
+          {stats.pts+=20;
+
+          }
            tasksToRemove.push(task._id);
           if(!modified)
           {
@@ -43,6 +51,10 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
                     stats.habitStreak = 0;
                    
                 }
+                else
+                {
+                  stats.pts+=10;
+                }
             habit.completed = false;
             habit.progress = 0;
             habit.resetDate = today;
@@ -56,6 +68,9 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
             {
                 stats.habitStreak = 0;
                
+            }else
+            {
+              stats.pts+=20;
             }
             habit.completed = false;
             habit.progress = 0;
@@ -70,6 +85,10 @@ const scheduledJob = cron.schedule('0 0 * * *', async () => {
             {
                 stats.habitStreak = 0;
             
+            }
+            else
+            {
+              stats.pts+=30;
             }
             habit.completed = false;
             habit.progress = 0;

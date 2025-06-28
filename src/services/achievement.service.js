@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const notification = require('../models/notification.model');
 
 const {Stats, achievementEmitter, levelThresholds} = require('../models/stats.model');
 console.log('Achievement emitter imported:', achievementEmitter);
@@ -6,7 +7,11 @@ const Achievement = require('../models/achievement.model');
 
 achievementEmitter.on('focus:session:completed', async ({ userId, sessionCount }) => {
     const milestones = [1, 10, 50, 100, 500];
-    console.log('I also got to the emitter!!');
+    const stats = await Stats.findOne({ userId });
+    stats.pts+=15;
+    console.log('increasing points from sessions');
+    await stats.save();
+    console.log('I also got to the emitteSr!!');
     for (const milestone of milestones) {
         if (sessionCount >= milestone) {
             await checkAndAwardAchievement(userId, 'Focus', milestone, 'sessions');
@@ -31,6 +36,10 @@ achievementEmitter.on('habit:streak:updated', async ({ userId, habits }) => {
     for (const milestone of streakMilestones) {
         for(const habit of habits)
         {
+            if(habit.streak== milestone){
+                stats.pts+=30;
+                await stats.save();
+            }
         if (habit.streak >= milestone) {
             await checkAndAwardAchievement(userId, 'Streak', milestone, 'streak');
         }
@@ -39,6 +48,12 @@ achievementEmitter.on('habit:streak:updated', async ({ userId, habits }) => {
 });
 achievementEmitter.on('habit:perfect:week', async ({userId, habitstreak}) =>{
     console.log('before if');
+    if(habitstreak==7)
+    {
+    const stats = await Stats.findOne({ userId });
+    stats.pts+=50;
+    await stats.save();
+    }
 if(habitstreak>=7)
 {
     console.log('after if');
@@ -56,6 +71,9 @@ achievementEmitter.on('task:completed', async ({ userId, completedCount }) => {
 });
 achievementEmitter.on('level:up', async ({ userId, newLevel }) => {
     const levelMilestones = [5, 10, 15, 20];
+    const stats = await Stats.findOne({ userId });
+    stats.pts+=75;
+    await stats.save();
     for (const milestone of levelMilestones) {
         if (newLevel >= milestone) {
             await checkAndAwardAchievement(userId, 'Level', milestone, 'level');
@@ -114,6 +132,7 @@ async function checkAndAwardAchievement(userId, category, criteria, type) {
             // Add XP reward
             const level = stats.level;
             const xp = stats.xp;
+            stats.pts+=100;
             const xpreq = levelThresholds[level-1];
             if(xp+achievement.xp>=xpreq)
             {
@@ -126,8 +145,13 @@ async function checkAndAwardAchievement(userId, category, criteria, type) {
                 stats.xp+=achievement.xp;
             }
             await stats.save();
-            // Directly require and call the function from server.js to avoid circular dependencies
-            require('../server.js').emitAchievementUnlocked(userId, achievement);
+            const notif = new notification({
+                userId: userId,
+                title: 'New Achievement Unlocked',
+                description: achievement
+            })
+            await notif.save();
+            require('../server.js').emitAchievementUnlocked(userId, notif);
             
         }
         else {
@@ -143,3 +167,4 @@ module.exports = {
     achievementEmitter,
     checkAndAwardAchievement
 };
+

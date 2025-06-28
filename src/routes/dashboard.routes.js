@@ -43,5 +43,8 @@ router.get('/getHabits', passport.authenticate('jwt', { session: false }), stats
 
 router.get('/achievements', passport.authenticate('jwt', { session: false }), statsController.getAchievements);
 
+router.get('/leaderboard', passport.authenticate('jwt', { session: false }), statsController.getLeaderboard);
+
+router.get('/notifications', passport.authenticate('jwt', { session: false }), statsController.getNotifications);
 
 module.exports = router;
