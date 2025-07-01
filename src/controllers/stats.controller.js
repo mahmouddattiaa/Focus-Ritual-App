@@ -1,5 +1,5 @@
 const { Stats } = require('../models/stats.model.js');
-
+const mongoose = require('mongoose');
 const User = require('../models/user.model.js');
 const Notification = require('../models/notification.model');
 
@@ -209,7 +209,7 @@ exports.CompleteTask = async (req, res) => {
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
         const currentHour = today.getHours();
-
+        const taskObjectId = new mongoose.Types.ObjectId(taskId);
         const stats = await Stats.findOne({ userId });
         if (stats.tasksCompleted.totalTasks <= stats.tasksCompleted.totalCompleted) {
             return res.status(400).json({
@@ -217,6 +217,15 @@ exports.CompleteTask = async (req, res) => {
             });
         }
         const tasks = stats.tasks;
+        const task = stats.tasks.find(t => t._id.toString() === taskId.toString());
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        if(task.completed===true){
+            return res.status(400).json({
+                message: 'task already completed'
+            });
+        }
 
         // Prepare update operation with productivityByHour increments
         const updateOperation = {
@@ -237,21 +246,21 @@ exports.CompleteTask = async (req, res) => {
             const hourData = stats.productivityByHour[currentHour];
             // Task completion boosts productivity score
             const hourScore = Math.min(100, Math.round((hourData.focusTime / 60) * 80 + ((hourData.tasksCompleted + 1) * 20)));
-            updateOperation.$set = {
-                [`productivityByHour.${currentHour}.productivityScore`]: hourScore
-            };
+            updateOperation.$set[`productivityByHour.${currentHour}.productivityScore`] = hourScore;
         }
 
         const updatedStats = await Stats.findOneAndUpdate(
-            { userId, 'tasks._id': taskId },
+            { userId, 'tasks._id': taskObjectId },
             updateOperation,
             {
                 new: true,
                 upsert: true
             }
         );
+        console.log('taskId:', taskId, 'typeof:', typeof taskId);
+        console.log('taskObjectId:', taskObjectId, 'typeof:', typeof taskObjectId);
         if (updatedStats) {
-
+  console.log('Updated stats:', updatedStats);
             const focusSessions = updatedStats.focusSessions;
             const focusTime = updatedStats.focusTime;
             const totalCompleted = updatedStats.tasksCompleted.totalCompleted;
@@ -408,6 +417,7 @@ exports.DecTasks = async (req, res) => {
         const {taskId} = req.body;
         const stats = await Stats.findOne({ userId });
         const tasks = stats.tasks;
+        const taskObjectId = new mongoose.Types.ObjectId(taskId);
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
         if (stats.tasksCompleted.totalCompleted <= 0) {
@@ -415,13 +425,24 @@ exports.DecTasks = async (req, res) => {
                 message: 'cannot decrement tasks when there are none completed'
             });
         }
+
+        const task = stats.tasks.find(t => t._id.toString() === taskId.toString());
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        if(task.completed===false){
+            return res.status(400).json({
+                message: 'task  not completed'
+            });
+        }
+
         const updatedaily = {};
         if (stats.dailyActivity.get(dateKey)?.tasksCompleted > 0) {
             updatedaily[`dailyActivity.${dateKey}.tasksCompleted`] = -1;
         }
 
         const updatedStats = await Stats.findOneAndUpdate(
-            { userId, 'tasks._id': taskId },
+            { userId, 'tasks._id': taskObjectId },
             {
                 $inc: {
                     'tasksCompleted.totalCompleted': -1,
@@ -434,11 +455,14 @@ exports.DecTasks = async (req, res) => {
             },
             { new: true, upsert: true }
         );
+        console.log('taskId:', taskId, 'typeof:', typeof taskId);
+        console.log('taskObjectId:', taskObjectId, 'typeof:', typeof taskObjectId);
         if (!updatedStats) {
             return res.status(400).json({
                 message: 'Couldnt update stats'
             });
         } else {
+            console.log('Updated stats:', updatedStats);
             return res.status(200).json({
                 message: 'Compeleted tasks decremented successfully',
                 completedTasks: updatedStats.tasksCompleted.totalCompleted,
