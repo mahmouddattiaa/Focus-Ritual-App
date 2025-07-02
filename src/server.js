@@ -51,7 +51,7 @@ const io = new Server(server, {
 // Attach io to the app context to make it accessible in routes if needed
 app.set('io', io);
 
-io.use(async(socket, next) => {
+io.use(async (socket, next) => {
     // Look for the token in the standard Authorization header first.
     const authHeader = socket.handshake.headers.authorization;
 
@@ -117,36 +117,36 @@ const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
 
 mongoose.connect(mongoURI).then(() => {
-        console.log('Connected to MongoDB successfully!');
-        console.log("Available routes:");
-        console.log("  POST /api/auth/login");
-        console.log("  POST /api/auth/register");
-        console.log("  GET  /api/auth/me");
-        console.log("  PUT  /api/update/name");
-        console.log("  PUT  /api/update/bio");
-        console.log("  PUT  /api/update/pfp");
-        console.log("  PUT  /api/update/privacy");
-        console.log("  GET  /api/stats/get");
-        console.log("  POST /api/stats/addTask");
-        console.log("  GET  /api/stats/getTasks");
-        console.log("  PUT  /api/stats/updateTask");
-        console.log("  DELETE /api/stats/removeTask");
-        console.log("  GET  /api/library");
-        console.log("  GET  /api/library/folder/:folderId");
-        console.log("  GET  /api/library/path");
-        console.log("  POST /api/library/folder");
-        console.log("  POST /up/upload");
-        console.log("  GET  /up/file/:id");
-        console.log("  DELETE /api/library/file/:fileId");
-        console.log("  DELETE /api/library/folder/:folderId");
-        console.log("  POST /api/gemini/generate");
-        console.log("  POST /api/gemini/chat");
-        console.log("  POST /api/subjects/create");
-        console.log("  GET  /api/subjects");
-        console.log("  GET  /api/subjects/:subjectId");
-        console.log("  PUT  /api/subjects/:subjectId");
-        console.log("  DELETE /api/subjects/:subjectId");
-    })
+    console.log('Connected to MongoDB successfully!');
+    console.log("Available routes:");
+    console.log("  POST /api/auth/login");
+    console.log("  POST /api/auth/register");
+    console.log("  GET  /api/auth/me");
+    console.log("  PUT  /api/update/name");
+    console.log("  PUT  /api/update/bio");
+    console.log("  PUT  /api/update/pfp");
+    console.log("  PUT  /api/update/privacy");
+    console.log("  GET  /api/stats/get");
+    console.log("  POST /api/stats/addTask");
+    console.log("  GET  /api/stats/getTasks");
+    console.log("  PUT  /api/stats/updateTask");
+    console.log("  DELETE /api/stats/removeTask");
+    console.log("  GET  /api/library");
+    console.log("  GET  /api/library/folder/:folderId");
+    console.log("  GET  /api/library/path");
+    console.log("  POST /api/library/folder");
+    console.log("  POST /up/upload");
+    console.log("  GET  /up/file/:id");
+    console.log("  DELETE /api/library/file/:fileId");
+    console.log("  DELETE /api/library/folder/:folderId");
+    console.log("  POST /api/gemini/generate");
+    console.log("  POST /api/gemini/chat");
+    console.log("  POST /api/subjects/create");
+    console.log("  GET  /api/subjects");
+    console.log("  GET  /api/subjects/:subjectId");
+    console.log("  PUT  /api/subjects/:subjectId");
+    console.log("  DELETE /api/subjects/:subjectId");
+})
     .catch((err) => {
         console.log('Database connection failed:', err);
         process.exit(1);
@@ -167,7 +167,7 @@ function emitAchievementUnlocked(userId, notif) {
 }
 const activeChats = new Map();
 
-io.on('connection', async(socket) => {
+io.on('connection', async (socket) => {
     console.log('a user connected', socket.id);
     const userId = socket.user._id.toString();
     // Collaboration room logic
@@ -234,47 +234,53 @@ io.on('connection', async(socket) => {
 
 
     socket.on('send_message', (data) => {
-        const messageData = {...data, sender: socket.id };
+        const messageData = { ...data, sender: socket.id };
         socket.to(data.roomCode).emit('receive_message', messageData);
     });
-    socket.on('open_notifications', async() => {
+    socket.on('open_notifications', async () => {
         await notification.updateMany({ userId: userId, isRead: false }, { $set: { isRead: true } });
 
     })
-    socket.on('close_notifications', async() => {
+    socket.on('close_notifications', async () => {
 
     })
-    socket.on('private_message', async(data) => {
-        const { recipientId, content } = data;
+    socket.on('private_message', async (data) => {
+        const { recipientId, content } = data; // Removed tempId
         const senderId = socket.user._id;
+
         const recipientIsViewing = activeChats.get(recipientId) === senderId.toString();
-        const user = await User.findById(senderId);
+
         const message = new Message({
             sender: senderId,
             recipient: recipientId,
             content: content,
             read: recipientIsViewing
         });
+
+        await message.save();
+
+        // The message object from the database is the payload.
+        const messagePayload = message.toObject();
+
+        // Send to recipient and back to sender
+        io.to(recipientId).emit('new_private_message', messagePayload);
+        io.to(senderId.toString()).emit('new_private_message', messagePayload);
+
+        console.log(`Relayed message from ${senderId} to ${recipientId}`);
+
+        // Handle notifications separately
         if (!recipientIsViewing) {
+            const user = await User.findById(senderId);
             const notif = new notification({
                 userId: recipientId,
                 title: `new message from ${user.firstName}`,
                 description: message.content,
-
-
-            })
+            });
             await notif.save();
             io.to(recipientId).emit('notification:message', notif);
         }
-        console.log(`${senderId} sending message to ${recipientId}`);
-        await message.save();
-
-
-        io.to(recipientId).emit('new_private_message', message);
-
-        io.to(userId).emit('new_private_message', message);
-    })
-    socket.on('open chat', async(data) => {
+    });
+    socket.on('open chat', async (data) => {
         const { friendId } = data;
         try {
             activeChats.set(userId, friendId);
@@ -295,7 +301,7 @@ io.on('connection', async(socket) => {
 
         activeChats.delete(userId);
     });
-    socket.on('disconnect', async() => {
+    socket.on('disconnect', async () => {
         console.log('user disconnected', socket.id);
         activeChats.delete(userId);
 
