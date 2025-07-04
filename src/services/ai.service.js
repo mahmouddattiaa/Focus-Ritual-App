@@ -353,9 +353,265 @@ const getContentProcessingStatus = (lectureId) => {
     return getJobProcessingStatus(lectureId);
 };
 
+// Generate a chat response based on lecture content
+const generateChatResponse = async (message, lectureContent) => {
+    try {
+        // Check if we have Gemini API configured
+        if (process.env.GEMINI_API_KEY) {
+            return await generateGeminiResponse(message, lectureContent);
+        }
+
+        // Check if we have OpenAI API configured
+        if (process.env.OPENAI_API_KEY) {
+            return await generateOpenAIResponse(message, lectureContent);
+        }
+
+        // Fallback to rule-based response
+        return generateRuleBasedResponse(message, lectureContent);
+    } catch (error) {
+        console.error('Error generating chat response:', error);
+        return "I'm sorry, I encountered an error processing your request. Please try again.";
+    }
+};
+
+// Generate a response using Google's Gemini API
+async function generateGeminiResponse(message, lectureContent) {
+    try {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+        // Create a context prompt with the lecture content
+        let contextPrompt = "You are an AI tutor helping a student with their studies. ";
+
+        // Add specific instructions if provided
+        if (lectureContent && lectureContent.instructions) {
+            contextPrompt += lectureContent.instructions + " ";
+        } else {
+            contextPrompt += "Answer the student's question directly and accurately based on the lecture content. ";
+        }
+
+        if (lectureContent) {
+            contextPrompt += `The student is asking about a lecture titled "${lectureContent.title}". `;
+
+            if (lectureContent.summary) {
+                contextPrompt += "Here's a summary of the lecture: ";
+                if (Array.isArray(lectureContent.summary)) {
+                    contextPrompt += lectureContent.summary.join(" ");
+                } else {
+                    contextPrompt += lectureContent.summary;
+                }
+                contextPrompt += " ";
+            }
+
+            if (lectureContent.flashcards && lectureContent.flashcards.length > 0) {
+                contextPrompt += `The lecture has ${lectureContent.flashcards.length} flashcards. `;
+                contextPrompt += "Here are some example flashcards: ";
+                const sampleCards = lectureContent.flashcards.slice(0, 3);
+                sampleCards.forEach(card => {
+                    contextPrompt += `Q: ${card.question} A: ${card.answer}. `;
+                });
+            }
+
+            if (lectureContent.examQuestions && lectureContent.examQuestions.length > 0) {
+                contextPrompt += `The lecture has ${lectureContent.examQuestions.length} exam questions. `;
+                contextPrompt += "Here are some example exam questions: ";
+                const sampleQuestions = lectureContent.examQuestions.slice(0, 3);
+                sampleQuestions.forEach(q => {
+                    contextPrompt += `Q: ${q.question} A: ${q.answer}. `;
+                });
+            }
+
+            if (lectureContent.revision) {
+                contextPrompt += "Here's some revision material from the lecture: ";
+                contextPrompt += lectureContent.revision.substring(0, 500) + " ";
+            }
+        }
+
+        contextPrompt += "Answer the student's specific question directly. If you don't know the answer based on the provided content, state that clearly.";
+
+        // Generate a response
+        const result = await model.generateContent([
+            contextPrompt,
+            `Student question: ${message}`
+        ]);
+
+        return result.response.text();
+    } catch (error) {
+        console.error('Error generating Gemini response:', error);
+        throw error;
+    }
+}
+
+// Generate a response using OpenAI API
+async function generateOpenAIResponse(message, lectureContent) {
+    try {
+        const { OpenAI } = require('openai');
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
+
+        // Create a context prompt with the lecture content
+        let contextPrompt = "You are an AI tutor helping a student with their studies. ";
+
+        // Add specific instructions if provided
+        if (lectureContent && lectureContent.instructions) {
+            contextPrompt += lectureContent.instructions + " ";
+        } else {
+            contextPrompt += "Answer the student's question directly and accurately based on the lecture content. ";
+        }
+
+        if (lectureContent) {
+            contextPrompt += `The student is asking about a lecture titled "${lectureContent.title}". `;
+
+            if (lectureContent.summary) {
+                contextPrompt += "Here's a summary of the lecture: ";
+                if (Array.isArray(lectureContent.summary)) {
+                    contextPrompt += lectureContent.summary.join(" ");
+                } else {
+                    contextPrompt += lectureContent.summary;
+                }
+                contextPrompt += " ";
+            }
+
+            if (lectureContent.flashcards && lectureContent.flashcards.length > 0) {
+                contextPrompt += `The lecture has ${lectureContent.flashcards.length} flashcards. `;
+                contextPrompt += "Here are some example flashcards: ";
+                const sampleCards = lectureContent.flashcards.slice(0, 3);
+                sampleCards.forEach(card => {
+                    contextPrompt += `Q: ${card.question} A: ${card.answer}. `;
+                });
+            }
+
+            if (lectureContent.examQuestions && lectureContent.examQuestions.length > 0) {
+                contextPrompt += `The lecture has ${lectureContent.examQuestions.length} exam questions. `;
+                contextPrompt += "Here are some example exam questions: ";
+                const sampleQuestions = lectureContent.examQuestions.slice(0, 3);
+                sampleQuestions.forEach(q => {
+                    contextPrompt += `Q: ${q.question} A: ${q.answer}. `;
+                });
+            }
+
+            if (lectureContent.revision) {
+                contextPrompt += "Here's some revision material from the lecture: ";
+                contextPrompt += lectureContent.revision.substring(0, 500) + " ";
+            }
+        }
+
+        contextPrompt += "Answer the student's specific question directly. If you don't know the answer based on the provided content, state that clearly.";
+
+        // Generate a response
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                { role: "system", content: contextPrompt },
+                { role: "user", content: message }
+            ],
+            max_tokens: 500
+        });
+
+        return completion.choices[0].message.content;
+    } catch (error) {
+        console.error('Error generating OpenAI response:', error);
+        throw error;
+    }
+}
+
+// Generate a rule-based response when AI APIs are not available
+function generateRuleBasedResponse(message, content) {
+    const lowerMessage = message.toLowerCase();
+
+    // If we don't have content, return a generic response
+    if (!content || Object.keys(content).length === 0) {
+        return "I don't have enough information about this lecture to answer your question.";
+    }
+
+    // Extract lecture title
+    const title = content.title || 'this lecture';
+
+    // Create a more direct response based on the content available
+    let response = '';
+
+    // Extract keywords from the message
+    const keywords = message.toLowerCase().split(/\s+/)
+        .filter(word => word.length > 3) // Only use significant words
+        .map(word => word.replace(/[.,?!;:'"(){}\[\]]/g, '')); // Remove punctuation
+
+    // Try to answer the question using the available content
+    if (content.summary) {
+        const summaryText = Array.isArray(content.summary) ? content.summary.join(' ') : content.summary;
+
+        // Check if the summary contains the keywords
+        const relevantToSummary = keywords.some(keyword => summaryText.toLowerCase().includes(keyword));
+
+        if (relevantToSummary) {
+            response = `Based on the lecture content: ${summaryText.substring(0, 400)}...`;
+            return response;
+        }
+    }
+
+    // If flashcards contain relevant information, use them to answer
+    if (content.flashcards && content.flashcards.length > 0) {
+        // Look for matching flashcards
+        const relevantCards = content.flashcards.filter(card =>
+            keywords.some(keyword =>
+                card.question.toLowerCase().includes(keyword) ||
+                card.answer.toLowerCase().includes(keyword)
+            )
+        );
+
+        if (relevantCards.length > 0) {
+            const card = relevantCards[0]; // Use the first relevant card
+            response = `According to the lecture materials: ${card.answer}`;
+            return response;
+        }
+    }
+
+    // Use exam questions if they seem relevant
+    if (content.examQuestions && content.examQuestions.length > 0) {
+        const relevantQuestions = content.examQuestions.filter(q =>
+            keywords.some(keyword =>
+                q.question.toLowerCase().includes(keyword) ||
+                q.answer.toLowerCase().includes(keyword)
+            )
+        );
+
+        if (relevantQuestions.length > 0) {
+            const question = relevantQuestions[0];
+            response = `From the exam materials: ${question.answer}`;
+            return response;
+        }
+    }
+
+    // Use revision content if available
+    if (content.revision) {
+        const revisionRelevant = keywords.some(keyword =>
+            content.revision.toLowerCase().includes(keyword)
+        );
+
+        if (revisionRelevant) {
+            response = `From the revision materials: ${content.revision.substring(0, 400)}...`;
+            return response;
+        }
+    }
+
+    // If we can't find a direct answer, provide a general response with the best information we have
+    if (content.summary) {
+        if (Array.isArray(content.summary)) {
+            return `I don't have a specific answer to your question. Here's what I know about ${title}: ${content.summary.slice(0, 3).join(' ')}`;
+        } else {
+            return `I don't have a specific answer to your question. Here's what I know about ${title}: ${content.summary.substring(0, 300)}...`;
+        }
+    }
+
+    // Default response
+    return `I'm here to help you with ${title}, but I don't have enough specific information to answer your question. Please try asking in a different way or about a topic covered in the lecture.`;
+}
+
 module.exports = {
     analyzePdfFromGCS,
     analyzePdfsFromGCS,
     getJobProcessingStatus,
-    getLectureContent
+    getLectureContent,
+    generateChatResponse
 }; 

@@ -128,10 +128,10 @@ exports.generateContent = async (req, res) => {
         try {
             const prompt = `
         Based on the following text from a lecture document titled "${lectureTitle}", please generate a JSON object with the following properties: "summary", "flashcards", "examQuestions", "revision".
-        - "summary": A concise summary of the key topics and concepts (2-4 sentences).
-        - "flashcards": An array of 3-5 objects, where each object has a "question" and "answer" property. Questions should cover main ideas.
+        - "summary": A comprehensive summary of the key topics and concepts formatted as an array of 10-15 bullet points. Each bullet point should be a clear, concise statement about an important concept from the lecture. Avoid merging multiple concepts in one point.
+        - "flashcards": An array of 15-20 objects, where each object has a "question" and "answer" property. Questions should cover main ideas, definitions, and concepts, and avoid repetition.
         - "examQuestions": An array of 2-3 potential exam questions based on the material.
-        - "revision": A short paragraph for quick revision, highlighting the most critical points.
+        - "revision": A short paragraph for quick revision, highlighting the most critical points. Do not use markdown or **bold** formatting, just plain sentences separated by newlines for each key point.
 
         Here is the document text:
         ---
@@ -264,10 +264,10 @@ exports.analyzePdf = async (req, res) => {
             // Generate AI content using Gemini
             const prompt = `
         Based on the following text from a lecture document titled "${lectureTitle}", please generate a JSON object with the following properties: "summary", "flashcards", "examQuestions", "revision".
-        - "summary": A concise summary of the key topics and concepts (2-4 sentences).
-        - "flashcards": An array of 3-5 objects, where each object has a "question" and "answer" property. Questions should cover main ideas.
+        - "summary": A comprehensive summary of the key topics and concepts formatted as an array of 10-15 bullet points. Each bullet point should be a clear, concise statement about an important concept from the lecture. Avoid merging multiple concepts in one point.
+        - "flashcards": An array of 15-20 objects, where each object has a "question" and "answer" property. Questions should cover main ideas, definitions, and concepts, and avoid repetition.
         - "examQuestions": An array of 2-3 potential exam questions based on the material.
-        - "revision": A short paragraph for quick revision, highlighting the most critical points.
+        - "revision": A short paragraph for quick revision, highlighting the most critical points. Do not use markdown or **bold** formatting, just plain sentences separated by newlines for each key point.
 
         Here is the document text:
         ---

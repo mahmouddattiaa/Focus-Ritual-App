@@ -112,9 +112,21 @@ app.use('/api/up', uploadRoutes);
 app.use('/up', uploadRoutes); // Add this route for direct access without /api prefix
 app.use('/api/messages', messageRoutes);
 app.use('/api/feed', feedRoutes);
+// Advanced learning features routes
+const noteRoutes = require('./routes/note.routes');
+const flashcardRoutes = require('./routes/flashcard.routes');
+const qaRoutes = require('./routes/qa.routes');
+const learningPathRoutes = require('./routes/learning-path.routes');
+app.use('/api/notes', noteRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/qa-sessions', qaRoutes);
+app.use('/api/learning-paths', learningPathRoutes);
 // Use a fallback for MongoDB URI
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/moneyyy';
 console.log("Using MongoDB URI:", mongoURI);
+
+// Import GCS config with verification function
+const gcsConfig = require('./config/gcs');
 
 mongoose.connect(mongoURI).then(() => {
     console.log('Connected to MongoDB successfully!');
@@ -151,6 +163,26 @@ mongoose.connect(mongoURI).then(() => {
         console.log('Database connection failed:', err);
         process.exit(1);
     });
+
+// After successful database connection, verify GCS connection
+mongoose.connection.once('open', async () => {
+    console.log('MongoDB database connection established successfully');
+
+    // Verify Google Cloud Storage connection
+    const gcsConnected = await gcsConfig.verifyConnection();
+    if (gcsConnected) {
+        console.log('Google Cloud Storage configured and ready');
+    } else {
+        console.warn('WARNING: Google Cloud Storage not configured properly. Some features may be limited.');
+        console.warn('Application will continue using MongoDB only for storage.');
+    }
+
+    // Start the server after both database and storage checks
+    const PORT = process.env.PORT || 5001;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port: ${PORT}`);
+    });
+});
 
 const PORT = process.env.PORT || 5001;
 
@@ -324,10 +356,6 @@ io.on('connection', async (socket) => {
         }
         delete socketToRoom[socket.id];
     });
-});
-
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
 });
 
 process.on('unhandledRejection', (err) => {

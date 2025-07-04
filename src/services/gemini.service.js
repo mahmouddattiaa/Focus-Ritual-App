@@ -12,7 +12,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
  * @param {string} prompt - The user prompt/question
  * @returns {Promise<string>} - The generated response
  */
-const generateResponse = async(prompt) => {
+const generateResponse = async (prompt) => {
     try {
         const result = await model.generateContent(prompt);
         const response = result.response;
@@ -29,7 +29,7 @@ const generateResponse = async(prompt) => {
  * @param {string} prompt - The current user prompt/question
  * @returns {Promise<string>} - The generated response
  */
-const generateChatResponse = async(history, prompt) => {
+const generateChatResponse = async (history, prompt) => {
     try {
         const chat = model.startChat({
             history: history.map(msg => ({

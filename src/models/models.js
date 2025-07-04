@@ -17,7 +17,7 @@ const extractedTextSchema = new mongoose.Schema({
     extracted_at: { type: Date, default: Date.now }
 });
 
-// Schema for Flashcards collection
+// Schema for Flashcards collection - for legacy data
 const flashcardSchema = new mongoose.Schema({
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     extracted_text_id: { type: mongoose.Schema.Types.ObjectId, ref: 'ExtractedText', required: true },
@@ -56,13 +56,20 @@ const libraryFileSchema = new mongoose.Schema({
     updated_at: { type: Date, default: Date.now }
 });
 
+// Create models, checking if they already exist to prevent duplicate model errors
+const UploadedFile = mongoose.models.UploadedFile || mongoose.model('UploadedFile', uploadedFileSchema);
+const ExtractedText = mongoose.models.ExtractedText || mongoose.model('ExtractedText', extractedTextSchema);
+// Skip creating Flashcard model here since it's defined in flashcard.model.js
+const LegacyFlashcard = mongoose.models.LegacyFlashcard || mongoose.model('LegacyFlashcard', flashcardSchema);
+const Summary = mongoose.models.Summary || mongoose.model('Summary', summarySchema);
+const LibraryFolder = mongoose.models.LibraryFolder || mongoose.model('LibraryFolder', libraryFolderSchema);
+const LibraryFile = mongoose.models.LibraryFile || mongoose.model('LibraryFile', libraryFileSchema);
 
-const UploadedFile = mongoose.model('UploadedFile', uploadedFileSchema);
-const ExtractedText = mongoose.model('ExtractedText', extractedTextSchema);
-const Flashcard = mongoose.model('Flashcard', flashcardSchema);
-const Summary = mongoose.model('Summary', summarySchema);
-const LibraryFolder = mongoose.model('LibraryFolder', libraryFolderSchema);
-const LibraryFile = mongoose.model('LibraryFile', libraryFileSchema);
-
-
-module.exports = { UploadedFile, ExtractedText, Flashcard, Summary, LibraryFolder, LibraryFile };
+module.exports = {
+    UploadedFile,
+    ExtractedText,
+    LegacyFlashcard, // Export as LegacyFlashcard to avoid conflicts
+    Summary,
+    LibraryFolder,
+    LibraryFile
+};

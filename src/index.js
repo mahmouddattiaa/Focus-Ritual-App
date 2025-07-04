@@ -9,6 +9,12 @@ const uploadRouter = require('./routes/upload');
 const libraryRoutes = require('./routes/library.routes.js');
 const aiRoutes = require('./routes/ai.routes');
 
+// Import the new routes
+const noteRoutes = require('./routes/note.routes');
+const flashcardRoutes = require('./routes/flashcard.routes');
+const qaRoutes = require('./routes/qa.routes');
+const learningPathRoutes = require('./routes/learning-path.routes');
+
 const app = express();
 
 const corsOptions = {
@@ -28,6 +34,12 @@ configurePassport();
 app.use('/api/auth', authRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/ai', aiRoutes);
+
+// Add the new routes to the app
+app.use('/api/notes', noteRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/qa-sessions', qaRoutes);
+app.use('/api/learning-paths', learningPathRoutes);
 
 const mongoURI = process.env.MONGO_URI;
 

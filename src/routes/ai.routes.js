@@ -12,4 +12,13 @@ router.get('/lecture-content/:lectureId', passport.authenticate('jwt', { session
 // Route for checking job status
 router.get('/job-status/:jobId', passport.authenticate('jwt', { session: false }), aiController.getJobStatus);
 
+// Add routes for new AI features
+router.post('/document-qa', passport.authenticate('jwt', { session: false }), aiController.documentQA);
+router.post('/generate-flashcards', passport.authenticate('jwt', { session: false }), aiController.generateFlashcards);
+router.post('/learning-path', passport.authenticate('jwt', { session: false }), aiController.generateLearningPath);
+router.post('/analyze-notes', passport.authenticate('jwt', { session: false }), aiController.analyzeNotes);
+
+// Add a new route for AI chat functionality
+router.post('/chat', passport.authenticate('jwt', { session: false }), aiController.handleChatMessage);
+
 module.exports = router; 
