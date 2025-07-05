@@ -256,7 +256,7 @@ router.get('/files', passport.authenticate('jwt', { session: false }), async (re
     }
 });
 
-router.post('/collaboration-upload', passport.authenticate('jwt', { session: false }), upload.single('file'), async(req, res) => {
+router.post('/collaboration-upload', passport.authenticate('jwt', { session: false }), upload.single('file'), async (req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });

@@ -179,12 +179,10 @@ mongoose.connection.once('open', async () => {
 
     // Start the server after both database and storage checks
     const PORT = process.env.PORT || 5001;
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`Server is running on port: ${PORT}`);
     });
 });
-
-const PORT = process.env.PORT || 5001;
 
 // In-memory stores for collaboration. In production, use a persistent store like Redis.
 const rooms = {}; // Using an object as a dictionary
