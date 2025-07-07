@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model.js');
-const Stats = require('../models/stats.model.js');
+const {Stats} = require('../models/stats.model.js');
 const mongoose = require('mongoose');
 const { s3, bucket } = require('../config/wasabi');
 

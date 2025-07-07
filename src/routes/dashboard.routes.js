@@ -41,5 +41,7 @@ router.put('/progressHabit', passport.authenticate('jwt', {session: false}), sta
 
 router.get('/getHabits', passport.authenticate('jwt', {session: false}), statsController.getHabits);
 
+router.get('/achievements', passport.authenticate('jwt', {session: false}), statsController.getAchievements);
+
 
 module.exports = router;

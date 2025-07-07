@@ -1,4 +1,4 @@
-const Stats = require('../models/stats.model.js');
+const {Stats} = require('../models/stats.model.js');
 
 const User = require('../models/user.model.js');
 
@@ -303,6 +303,7 @@ exports.GetAllStats = async (req, res) => {
                 habitStreak: stats.habitStreak,
                 productivityScore: stats.productivityScore,
                 level: stats.level,
+                xp: stats.xp,
                 lastActiveDate: stats.lastActiveDate,
                 dailyActivity: Object.fromEntries(stats.dailyActivity)
             }
@@ -749,6 +750,7 @@ exports.progressHabit = async (req, res) => {
         }
             
             // Save the document - this will trigger the pre-save hook
+            stats.markModified('habits');
         await stats.save();
         
         return res.status(200).json({
@@ -814,5 +816,35 @@ exports.getHabits = async (req, res) => {
         });
     }
 };
+
+exports.getAchievements = async (req,res) => {
+    try{
+    if (!req.user) {
+        return res.status(401).json({
+            message: 'not authorized'
+        });
+    }
+    const userId = req.user._id;
+    const stats = await Stats.findOne({userId}).populate('achievements.achievementId');
+    if (!stats) {
+        return res.status(404).json({ message: 'Stats not found for this user.' });
+    }
+    return res.status(200).json({
+        message: 'achievements fetched successfully!',
+        stats: {
+           achievements: stats.achievements
+        }
+    });
+} catch (err) {
+    console.log('Failed to fetch achievements due to: ', err);
+    return res.status(500).json({
+        message: 'Server error',
+        error: err.message
+    });
+}
+
+};
+
+
 
 

@@ -3,7 +3,10 @@ const mongoose = require('mongoose');
 const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
-require('./controllers/scheduler');
+const http = require('http');
+const { initializeWebSocket } = require('./services/websocket.service');
+require('./services/achievement.service');
+const habitResetJob = require('./controllers/scheduler');
 // Configure dotenv with explicit path
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -21,7 +24,8 @@ console.log("MONGO_URI:", process.env.MONGO_URI);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 const app = express();
-
+const server = http.createServer(app);
+initializeWebSocket(server);
 // Configure CORS with specific options
 const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend URLs
@@ -89,3 +93,20 @@ process.on('unhandledRejection', (err) => {
     console.error('Unhandled Promise Rejection:', err);
     process.exit(1);
 });
+const gracefulShutdown = () => {
+    console.log('Shutdown signal received. Stopping scheduled jobs...');
+    
+    // 3. THIS IS THE LINE THAT "DELETES" THE OLD SCHEDULER
+    habitResetJob.stop();
+  
+    // Close the web server and then exit the process
+    server.close(() => {
+      console.log('Server has been closed.');
+      process.exit(0);
+    });
+  };
+  
+  // 4. Listen for the signals that mean "it's time to close"
+  process.on('SIGINT', gracefulShutdown);  // For Ctrl+C in your terminal
+  process.on('SIGTERM', gracefulShutdown); // For standard process termination
+  process.on('SIGUSR2', gracefulShutdown);

@@ -1,9 +1,9 @@
 // In your scheduler file
 const cron = require('node-cron');
-const Stats = require('../models/stats.model');
-
-
-cron.schedule('0 0 * * *', async () => {
+const {Stats} = require('../models/stats.model');
+console.log('I am here in the scheduler');
+console.trace("Scheduler file was required from:");
+const scheduledJob = cron.schedule('0 0 * * *', async () => {
   try {
     const today = new Date();
     
@@ -25,8 +25,9 @@ cron.schedule('0 0 * * *', async () => {
         if (habit.frequency === 'Daily') {
             if(!habit.completed)
                 {
+                  console.log('is it getting reset from here?');
                     stats.habitStreak = 0;
-                    habit.streak = 0;
+                   
                 }
             habit.completed = false;
             habit.progress = 0;
@@ -40,7 +41,7 @@ cron.schedule('0 0 * * *', async () => {
             if(!habit.completed)
             {
                 stats.habitStreak = 0;
-                habit.streak = 0;
+               
             }
             habit.completed = false;
             habit.progress = 0;
@@ -54,7 +55,7 @@ cron.schedule('0 0 * * *', async () => {
             if(!habit.completed)
             {
                 stats.habitStreak = 0;
-                habit.streak = 0;
+            
             }
             habit.completed = false;
             habit.progress = 0;
@@ -75,3 +76,4 @@ cron.schedule('0 0 * * *', async () => {
     console.error('Error resetting habits:', err);
   }
 });
+module.exports = scheduledJob;
