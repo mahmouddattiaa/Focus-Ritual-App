@@ -205,23 +205,22 @@ exports.CompleteTask = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         const userId = req.user._id;
-        const {taskId} = req.body;
+        const { taskId } = req.body;
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
         const currentHour = today.getHours();
         const taskObjectId = new mongoose.Types.ObjectId(taskId);
         const stats = await Stats.findOne({ userId });
-        if (stats.tasksCompleted.totalTasks <= stats.tasksCompleted.totalCompleted) {
-            return res.status(400).json({
-                message: 'cannot complete task when there are no tasks to complete'
-            });
+
+        if (!stats) {
+            return res.status(404).json({ message: 'User stats not found' });
         }
-        const tasks = stats.tasks;
+
         const task = stats.tasks.find(t => t._id.toString() === taskId.toString());
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
-        if(task.completed===true){
+        if (task.completed === true) {
             return res.status(400).json({
                 message: 'task already completed'
             });
@@ -229,15 +228,15 @@ exports.CompleteTask = async (req, res) => {
 
         // Prepare update operation with productivityByHour increments
         const updateOperation = {
-         
+
             $inc: {
                 'tasksCompleted.totalCompleted': 1,
                 [`dailyActivity.${dateKey}.tasksCompleted`]: 1,
                 [`productivityByHour.${currentHour}.tasksCompleted`]: 1
-                
+
             },
             $set: {
-                'tasks.$.completed' : true
+                'tasks.$.completed': true
             }
         };
 
@@ -260,7 +259,7 @@ exports.CompleteTask = async (req, res) => {
         console.log('taskId:', taskId, 'typeof:', typeof taskId);
         console.log('taskObjectId:', taskObjectId, 'typeof:', typeof taskObjectId);
         if (updatedStats) {
-  console.log('Updated stats:', updatedStats);
+            console.log('Updated stats:', updatedStats);
             const focusSessions = updatedStats.focusSessions;
             const focusTime = updatedStats.focusTime;
             const totalCompleted = updatedStats.tasksCompleted.totalCompleted;
@@ -414,25 +413,24 @@ exports.DecTasks = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
         const userId = req.user._id;
-        const {taskId} = req.body;
+        const { taskId } = req.body;
         const stats = await Stats.findOne({ userId });
-        const tasks = stats.tasks;
+
+        if (!stats) {
+            return res.status(404).json({ message: 'User stats not found' });
+        }
+
         const taskObjectId = new mongoose.Types.ObjectId(taskId);
         const today = new Date();
         const dateKey = today.toISOString().split('T')[0];
-        if (stats.tasksCompleted.totalCompleted <= 0) {
-            return res.status(400).json({
-                message: 'cannot decrement tasks when there are none completed'
-            });
-        }
 
         const task = stats.tasks.find(t => t._id.toString() === taskId.toString());
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
-        if(task.completed===false){
+        if (task.completed === false) {
             return res.status(400).json({
-                message: 'task  not completed'
+                message: 'task not completed'
             });
         }
 
@@ -448,8 +446,8 @@ exports.DecTasks = async (req, res) => {
                     'tasksCompleted.totalCompleted': -1,
                     ...updatedaily
                 },
-                $set:{
-                    'tasks.$.completed' : false
+                $set: {
+                    'tasks.$.completed': false
                 }
 
             },
@@ -549,6 +547,11 @@ exports.removeTask = async (req, res) => {
             });
         }
         const stats = await Stats.findOne({ userId });
+        if (!stats) {
+            return res.status(404).json({
+                message: 'Stats not found'
+            });
+        }
         const taskExists = stats.tasks.id(taskId);
         if (!taskExists) {
             return res.status(404).json({
@@ -560,12 +563,16 @@ exports.removeTask = async (req, res) => {
                 message: 'deleteTask must be a boolean'
             });
         }
-        if (deleteTask == true) {
+        if (deleteTask == true && stats.tasksCompleted.totalTasks > 0) {
             stats.tasksCompleted.totalTasks--;
         }
 
+        // Remove the task
         stats.tasks.pull({ _id: taskId });
-        await stats.save();
+
+        // Save with validation disabled to avoid issues with existing data
+        await stats.save({ validateBeforeSave: false });
+
         return res.status(200).json({
             message: 'task removed successfully!',
             tasks: stats.tasks
@@ -945,13 +952,13 @@ exports.getAchievements = async (req, res) => {
 
 exports.getLeaderboard = async (req, res) => {
     try {
-       
+
         const topUsers = await Stats.find({})
             .sort({ pts: -1 })
             .limit(100)
-            .populate('userId', 'firstName lastName'); 
+            .populate('userId', 'firstName lastName');
 
-        
+
         const leaderboard = topUsers.map(stat => ({
             userId: stat.userId._id,
             firstName: stat.userId.firstName,
@@ -979,7 +986,7 @@ exports.getNotifications = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-    
+
         const notifications = await Notification.find({ userId: req.user._id })
             .sort({ timestamp: -1 });
 

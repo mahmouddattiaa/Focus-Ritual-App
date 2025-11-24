@@ -60,7 +60,8 @@ const StatsSchema = new mongoose.Schema({
                 },
                 taskDescription: {
                     type: String,
-                    required: true
+                    required: false,
+                    default: ''
                 },
                 priority: {
                     type: String,
@@ -91,12 +92,17 @@ const StatsSchema = new mongoose.Schema({
                 subTasks: {
                     type: [
                         {
-                            type: String
+                            title: {
+                                type: String,
+                                required: true
+                            },
+                            completed: {
+                                type: Boolean,
+                                default: false
+                            }
                         }
                     ],
                     default: []
-
-
                 },
                 completed: {
                     type: Boolean,
@@ -228,7 +234,7 @@ const StatsSchema = new mongoose.Schema({
         ],
         default: []
     },
-    pts:{
+    pts: {
         type: Number,
         default: 0
     },
