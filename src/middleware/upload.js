@@ -21,11 +21,15 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true); 
-    } else {
-      cb(new Error('Only PDFs are allowed'), false);
+    // Allow images, videos, and PDFs
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|pdf/;
+    const mimetype = allowedTypes.test(file.mimetype);
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetype && extname) {
+      return cb(null, true);
     }
+    cb(new Error(`File type not supported: ${file.mimetype}. Only images, videos, and PDFs are allowed.`));
   }
 });
 

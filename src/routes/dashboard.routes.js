@@ -6,17 +6,9 @@ const router = express.Router();
 
 router.put('/task', passport.authenticate('jwt', { session: false }), statsController.CompleteTask);
 
-router.put('/dec', passport.authenticate('jwt', { session: false }), statsController.DecrementTask);
 
-router.post('/addHabit', passport.authenticate('jwt', { session: false }), statsController.addHabit);
+router.put('/dec', passport.authenticate('jwt', { session: false }), statsController.DecTasks);
 
-router.post('/removeHabit', passport.authenticate('jwt', { session: false }), statsController.removeHabit);
-
-router.put('/updateHabit', passport.authenticate('jwt', { session: false }), statsController.updateHabit);
-
-router.get('/getHabits', passport.authenticate('jwt', { session: false }), statsController.getHabits);
-
-router.post('/progressHabit', passport.authenticate('jwt', { session: false }), statsController.progressHabit);
 
 router.put('/session', passport.authenticate('jwt', { session: false }), statsController.IncSessions);
 
@@ -26,5 +18,33 @@ router.put('/hours', passport.authenticate('jwt', { session: false }), statsCont
 
 router.get('/get', passport.authenticate('jwt', { session: false }), statsController.GetAllStats);
 
+
+
+router.post('/addTask', passport.authenticate('jwt', { session: false }), statsController.addTask);
+
+
+router.delete('/removeTask', passport.authenticate('jwt', { session: false }), statsController.removeTask);
+
+
+router.put('/updateTask', passport.authenticate('jwt', { session: false }), statsController.updateTask);
+
+
+router.get('/getTasks', passport.authenticate('jwt', { session: false }), statsController.getTasks);
+
+router.post('/addHabit', passport.authenticate('jwt', { session: false }), statsController.addHabit);
+
+router.delete('/removeHabit', passport.authenticate('jwt', { session: false }), statsController.removeHabit);
+
+router.put('/updateHabit', passport.authenticate('jwt', { session: false }), statsController.updateHabit);
+
+router.put('/progressHabit', passport.authenticate('jwt', { session: false }), statsController.progressHabit);
+
+router.get('/getHabits', passport.authenticate('jwt', { session: false }), statsController.getHabits);
+
+router.get('/achievements', passport.authenticate('jwt', { session: false }), statsController.getAchievements);
+
+router.get('/leaderboard', passport.authenticate('jwt', { session: false }), statsController.getLeaderboard);
+
+router.get('/notifications', passport.authenticate('jwt', { session: false }), statsController.getNotifications);
 
 module.exports = router;

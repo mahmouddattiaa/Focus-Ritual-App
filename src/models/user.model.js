@@ -38,6 +38,36 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    friends: {
+        type:[
+            {
+             
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User'
+              
+                }
+
+
+            
+        ],
+        default: []
+    },
+    friendRequests:{
+        type:[
+            {
+                friendId:{
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User'
+                },
+            }
+        ],
+        default: []
+    },
+    refreshToken:{
+        type: String
+    },
+    resetPasswordToken: {type:String},
+resetPasswordExpires: {type:Date},
     settings: {
         profileVisibility: {
             type: String,
@@ -66,6 +96,10 @@ const UserSchema = new mongoose.Schema({
             default: false
         }
 
+    },
+    online:{
+        type: Boolean,
+        default:false
     }
 },
     {

@@ -2,7 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 const fs = require('fs').promises;
-const { s3, bucket } = require('../config/wasabi');
+const { gcs, bucket, getSignedUrl } = require('../config/gcs');
 const upload = require('../middleware/upload'); // For PDF uploads
 const profileUpload = require('../middleware/profileUpload'); // For image uploads
 const User = require('../models/user.model.js');
@@ -12,7 +12,7 @@ router.put('/pfp', passport.authenticate('jwt', { session: false }), (req, res, 
     console.log('Headers:', req.headers);
     console.log('Content-Type:', req.headers['content-type']);
     next();
-}, profileUpload.any(), async (req, res) => {
+}, profileUpload.any(), async(req, res) => {
 
     console.log('Files received:', req.files);
     console.log('Body:', req.body);
@@ -41,19 +41,20 @@ router.put('/pfp', passport.authenticate('jwt', { session: false }), (req, res, 
         console.log('File read successfully, size:', fileContent.length);
 
         const key = `profile-pictures/${userId}/${file.filename}`; // Changed the folder name
-        const params = {
-            Bucket: bucket,
-            Key: key,
-            Body: fileContent,
-            ContentType: file.mimetype
-        };
 
-        await s3.upload(params).promise();
-        console.log('File uploaded to Wasabi');
+        // Upload to Google Cloud Storage
+        const gcsFile = gcs.file(key);
+        await gcsFile.save(fileContent, {
+            contentType: file.mimetype,
+            metadata: {
+                contentType: file.mimetype
+            }
+        });
+        console.log('File uploaded to Google Cloud Storage');
 
-        const imageUrl = `https://${bucket}.s3.us-east-1.wasabisys.com/${key}`;
+
         const updatedUser = await User.findByIdAndUpdate(
-            userId, { profilePicture: imageUrl }, { new: true }
+            userId, { profilePicture: key }, { new: true }
         );
 
         // Clean up the temporary file
@@ -69,9 +70,10 @@ router.put('/pfp', passport.authenticate('jwt', { session: false }), (req, res, 
                 message: 'failed to update user!'
             });
         } else {
+            const downloadUrl = await getProfilePictureDownloadUrl(updatedUser.profilePicture);
             return res.status(200).json({
                 message: 'updated successfully',
-                profilePicture: imageUrl
+                profilePicture: downloadUrl
             });
         }
     } catch (err) {
@@ -82,8 +84,12 @@ router.put('/pfp', passport.authenticate('jwt', { session: false }), (req, res, 
         });
     }
 });
+async function getProfilePictureDownloadUrl(key) {
+    if (!key) return null;
+    return await getSignedUrl(key);
+}
 
-router.put('/bio', passport.authenticate('jwt', { session: false }), async (req, res) => {
+router.put('/bio', passport.authenticate('jwt', { session: false }), async(req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -112,7 +118,7 @@ router.put('/bio', passport.authenticate('jwt', { session: false }), async (req,
 
 });
 
-router.put('/name', passport.authenticate('jwt', { session: false }), async (req, res) => {
+router.put('/name', passport.authenticate('jwt', { session: false }), async(req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -122,9 +128,9 @@ router.put('/name', passport.authenticate('jwt', { session: false }), async (req
 
         const updatedUser = await User.findByIdAndUpdate(
             userId, {
-            firstName: firstName,
-            lastName: lastName
-        }, { new: true }
+                firstName: firstName,
+                lastName: lastName
+            }, { new: true }
         );
         if (updatedUser) {
             return res.status(200).json({
@@ -161,7 +167,7 @@ router.post('/debug-upload', profileUpload.any(), (req, res) => {
     });
 });
 
-router.put('/privacy', passport.authenticate('jwt', { session: false }), async (req, res) => {
+router.put('/privacy', passport.authenticate('jwt', { session: false }), async(req, res) => {
     try {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -183,8 +189,8 @@ router.put('/privacy', passport.authenticate('jwt', { session: false }), async (
         }
         const updatedUser = await User.findByIdAndUpdate(
             userId, {
-            $set: updateFields
-        }, { new: true }
+                $set: updateFields
+            }, { new: true }
         );
         if (updatedUser) {
             return res.status(200).json({

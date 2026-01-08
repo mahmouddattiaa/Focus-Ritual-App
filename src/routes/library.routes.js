@@ -4,6 +4,9 @@ const passport = require('passport');
 const mongoose = require('mongoose');
 const { LibraryFolder, LibraryFile, UploadedFile } = require('../models/models');
 const path = require('path');
+const multer = require('multer');
+const libraryController = require('../controllers/library.controller');
+const upload = require('../middleware/upload');
 
 // Middleware to ensure user is authenticated
 const auth = passport.authenticate('jwt', { session: false });
@@ -43,7 +46,7 @@ const formatLibraryItem = (item, itemType) => {
 };
 
 // Get root library items or items in a specific folder
-router.get('/', auth, async(req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         console.log(`Getting root library items for user ${userId}`);
@@ -81,7 +84,7 @@ router.get('/', auth, async(req, res) => {
 });
 
 // Get items in a specific folder
-router.get('/folder/:folderId', auth, async(req, res) => {
+router.get('/folder/:folderId', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         const { folderId } = req.params;
@@ -138,7 +141,7 @@ router.get('/folder/:folderId', auth, async(req, res) => {
 });
 
 // Find folder by path
-router.get('/path', auth, async(req, res) => {
+router.get('/path', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         const { path } = req.query;
@@ -200,7 +203,7 @@ router.get('/path', auth, async(req, res) => {
 });
 
 // Create a new folder
-router.post('/folder', auth, async(req, res) => {
+router.post('/folder', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         const { name, parentId, path } = req.body;
@@ -275,7 +278,7 @@ router.post('/folder', auth, async(req, res) => {
 });
 
 // Delete a folder
-router.delete('/folder/:folderId', auth, async(req, res) => {
+router.delete('/folder/:folderId', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         const { folderId } = req.params;
@@ -335,7 +338,7 @@ router.delete('/folder/:folderId', auth, async(req, res) => {
 });
 
 // Delete a file
-router.delete('/file/:fileId', auth, async(req, res) => {
+router.delete('/file/:fileId', auth, async (req, res) => {
     try {
         const userId = req.user._id;
         const { fileId } = req.params;
@@ -380,5 +383,20 @@ router.delete('/file/:fileId', auth, async(req, res) => {
         });
     }
 });
+
+// Route for generating AI content from a PDF
+router.post('/analyze-pdf', passport.authenticate('jwt', { session: false }), upload.single('file'), libraryController.analyzePdf);
+
+// Route for retrieving previously generated lecture content
+router.get('/content/:lectureId', passport.authenticate('jwt', { session: false }), libraryController.getLectureContent);
+
+// Get all subjects and lectures with content
+router.get('/subjects-lectures', auth, libraryController.getAllSubjectsAndLectures);
+
+// Delete file from cloud storage and database
+router.delete('/file/:fileId', auth, libraryController.deleteFile);
+
+// Check if a file exists in cloud storage
+router.get('/file/:fileId/check', auth, libraryController.checkFileExists);
 
 module.exports = router;
