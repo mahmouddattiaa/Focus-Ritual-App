@@ -47,12 +47,14 @@ For a detailed visual map of the project, see [PROJECT_MAP.md](./PROJECT_MAP.md)
 
 ## 📖 Documentation
 
-We have detailed documentation available in this repository:
+We have organized documentation in the `/docs` folder:
 
-*   [**QUICK_START.md**](./QUICK_START.md): Step-by-step guide to get up and running.
-*   [**PROJECT_MAP.md**](./PROJECT_MAP.md): Complete architectural overview and data flow.
-*   [**README_COMPLETE.md**](./README_COMPLETE.md): Detailed feature breakdown and optimization guide.
-*   [**OPTIMIZATION_GUIDE.md**](./backend/OPTIMIZATION_GUIDE.md): Backend performance and security improvements.
+*   **[docs/QUICK_START.md](./docs/QUICK_START.md)**: Step-by-step guide to get up and running.
+*   **[docs/PROJECT_MAP.md](./docs/PROJECT_MAP.md)**: Complete architectural overview and data flow.
+*   **[docs/README_COMPLETE.md](./docs/README_COMPLETE.md)**: Detailed feature breakdown and optimization guide.
+*   **[docs/architecture/](./docs/architecture/)**: Performance optimization guides and checklists.
+*   **[docs/backend/](./docs/backend/)**: Backend-specific documentation (GCS setup, implementation details).
+*   **[docs/frontend/](./docs/frontend/)**: Frontend-specific documentation (theme system, timer changes, task fixes).
 
 ## 🛠️ Tech Stack
 

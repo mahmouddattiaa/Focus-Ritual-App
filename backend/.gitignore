@@ -11,7 +11,7 @@ yarn.lock
 
 # Service Account Keys
 keys/
-*.json
+keys/*.json
 
 # Logs
 logs/
