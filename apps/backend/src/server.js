@@ -12,8 +12,8 @@ const jwt = require('jsonwebtoken');
 const { initializeWebSocket } = require('./services/websocket.service');
 require('./services/achievement.service');
 const habitResetJob = require('./controllers/scheduler');
-// Configure dotenv with explicit path
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+// Configure dotenv with explicit path to root of monorepo
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const Message = require('./models/messages.model');
 const authRoutes = require('./routes/auth.routes');
 const configurePassport = require('./config/passport');
@@ -154,6 +154,14 @@ const activeChats = new Map();
 
 io.on('connection', async (socket) => {
     console.log('a user connected', socket.id);
+
+    // Safety check: Ensure user is attached to socket (from middleware)
+    if (!socket.user) {
+        console.warn(`Socket ${socket.id} connected without authentication. Disconnecting.`);
+        socket.disconnect(true);
+        return;
+    }
+
     const userId = socket.user._id.toString();
     // Collaboration room logic
     socket.on('joinRoom', ({ roomCode, user }) => {

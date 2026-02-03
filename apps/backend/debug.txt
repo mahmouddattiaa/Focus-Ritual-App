@@ -1,0 +1,49 @@
+--- STARTING DEBUG SESSION ---
+Current directory: D:\Personal Project\Personal Projects\FR-NEW\apps\backend
+Attempting to load .env from: D:\Personal Project\Personal Projects\FR-NEW\.env
+MONGO_URI exists: [33mtrue[39m
+JWT_SECRET exists: [33mtrue[39m
+Requiring server.js...
+Achievement emitter created: EventEmitter {
+  _events: [Object: null prototype] {},
+  _eventsCount: [33m0[39m,
+  _maxListeners: [90mundefined[39m,
+  [[32mSymbol(shapeMode)[39m]: [33mfalse[39m,
+  [[32mSymbol(kCapture)[39m]: [33mfalse[39m
+}
+Achievement emitter imported: EventEmitter {
+  _events: [Object: null prototype] {},
+  _eventsCount: [33m0[39m,
+  _maxListeners: [90mundefined[39m,
+  [[32mSymbol(shapeMode)[39m]: [33mfalse[39m,
+  [[32mSymbol(kCapture)[39m]: [33mfalse[39m
+}
+I am here in the scheduler
+Trace: Scheduler file was required from:
+    at Object.<anonymous> (D:\Personal Project\Personal Projects\FR-NEW\apps\backend\src\controllers\scheduler.js:5:9)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (D:\Personal Project\Personal Projects\FR-NEW\apps\backend\src\server.js:14:23)
+Using MongoDB URI: mongodb+srv://yusuffahmed242:3DnXspmGNnw87axh@focusritual.ywbqraq.mongodb.net/
+Database connection failed: MongoNetworkError: read ECONNRESET
+    at Connection.onSocketError (D:\Personal Project\Personal Projects\FR-NEW\node_modules\[4mmongodb[24m\lib\cmap\connection.js:110:22)
+[90m    at TLSSocket.emit (node:events:530:35)[39m
+[90m    at emitErrorNT (node:internal/streams/destroy:170:8)[39m
+[90m    at emitErrorCloseNT (node:internal/streams/destroy:129:3)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)[39m {
+  errorLabelSet: Set(3) { [32m'HandshakeError'[39m, [32m'RetryableWriteError'[39m, [32m'ResetPool'[39m },
+  beforeHandshake: [33mfalse[39m,
+  connectionGeneration: [33m0[39m,
+  [cause]: Error: read ECONNRESET
+  [90m    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20)[39m {
+    errno: [33m-4077[39m,
+    code: [32m'ECONNRESET'[39m,
+    syscall: [32m'read'[39m
+  }
+}

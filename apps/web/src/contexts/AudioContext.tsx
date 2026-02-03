@@ -24,54 +24,54 @@ interface AudioContextType {
     addTrack: (track: Omit<SoundscapeTrack, 'isPlaying'>) => void;
 }
 
-// Define the initial tracks - Using free ambient sound sources
+// Define the initial tracks - URLs removed to prevent 403 errors (Assets need self-hosting)
 const initialTracks: SoundscapeTrack[] = [
     {
         id: 'coffee-shop',
         name: 'Coffee Shop',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_4c3d3d1c0e.mp3?filename=coffee-shop-ambience-16180.mp3',
+        url: '', // TODO: Host 'coffee-shop-ambience.mp3' and add URL here
         volume: 60,
         isPlaying: false,
     },
     {
         id: 'fireplace',
         name: 'Fireplace',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_2b70cf2e92.mp3?filename=fireplace-6307.mp3',
+        url: '', // TODO: Host 'fireplace.mp3'
         volume: 60,
         isPlaying: false,
     },
     {
         id: 'forest',
         name: 'Forest',
-        url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=forest-with-small-river-birds-and-nature-field-recording-6735.mp3',
+        url: '', // TODO: Host 'forest.mp3'
         volume: 50,
         isPlaying: false,
     },
     {
         id: 'rain',
         name: 'Rain',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/12/audio_2948f66157.mp3?filename=rain-and-thunder-16705.mp3',
+        url: '', // TODO: Host 'rain.mp3'
         volume: 30,
         isPlaying: false,
     },
     {
         id: 'waves',
         name: 'Waves',
-        url: 'https://cdn.pixabay.com/download/audio/2022/06/07/audio_d48d3cc447.mp3?filename=ocean-wave-rock-birds-8052.mp3',
+        url: '', // TODO: Host 'waves.mp3'
         volume: 50,
         isPlaying: false,
     },
     {
         id: 'wind',
         name: 'Wind',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_f975090df8.mp3?filename=soft-wind-blowing-naturefx-20-6444.mp3',
+        url: '', // TODO: Host 'wind.mp3'
         volume: 25,
         isPlaying: false,
     },
     {
         id: 'night',
         name: 'Night Sounds',
-        url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c610c01d4d.mp3?filename=night-crickets-insects-17024.mp3',
+        url: '', // TODO: Host 'night.mp3'
         volume: 40,
         isPlaying: false,
     },
@@ -94,6 +94,11 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log('AudioContext: Initializing audio elements');
         // Create audio elements for each track
         audioState.tracks.forEach(track => {
+            if (!track.url) {
+                // Skip initialization for tracks without URLs
+                return;
+            }
+
             if (!audioRefs.current[track.id]) {
                 console.log(`AudioContext: Creating audio element for ${track.id}`);
                 const audio = new Audio();

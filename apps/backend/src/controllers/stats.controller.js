@@ -694,8 +694,9 @@ exports.getTasks = async (req, res) => {
             completed: task.completed
         }));
         if (tasks.length === 0) {
-            return res.status(404).json({
-                message: 'no tasks found'
+            return res.status(200).json({
+                message: 'no tasks found',
+                tasks: []
             });
         }
         return res.status(200).json({
@@ -940,8 +941,9 @@ exports.getHabits = async (req, res) => {
         }));
 
         if (habits.length === 0) {
-            return res.status(404).json({
-                message: 'no habits found'
+            return res.status(200).json({
+                message: 'no habits found',
+                habits: []
             });
         }
 
