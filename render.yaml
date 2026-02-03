@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: focus-ritual-backend
+    env: node
+    plan: free
+    rootDir: apps/backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
