@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables (Security)
+.env
+.env.*
+*.env
+
+# Git
+.git/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE & System
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Uploads & Temp storage
+uploads/
+tmp/
+**/uploads/
+**/tmp/
+
+# Keys & Secrets
+keys/
+**/keys/
+*.pem
+*.key
+*.p12
+service-account-key.json
+
+# Lock files (Too verbose for context, package.json is sufficient)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Testing coverage
+coverage/
+
+# Documentation generation
+docs/site/
+
+# Minified files
+*.min.js
+*.min.css
+*.map
