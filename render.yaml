@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     rootDir: apps/backend
-    buildCommand: npm install
+    buildCommand: npm install --no-package-lock && npm rebuild
     startCommand: node src/server.js
     envVars:
       - key: MONGO_URI
