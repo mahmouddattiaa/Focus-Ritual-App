@@ -81,6 +81,11 @@ const io = new Server(server, {
     transports: ['websocket', 'polling']
 });
 
+// Health check route for UptimeRobot
+app.get('/ping', (req, res) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 // API routes with /api prefix
 app.use('/api/auth', authRoutes);
 app.use('/api/update', settingsRoutes);
