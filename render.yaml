@@ -11,5 +11,15 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
       - key: FRONTEND_URL
+        sync: false
+      - key: GCS_PROJECT_ID
+        sync: false
+      - key: GCS_BUCKET_NAME
         sync: false
