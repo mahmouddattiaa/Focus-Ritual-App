@@ -13,7 +13,7 @@ const { initializeWebSocket } = require('./services/websocket.service');
 require('./services/achievement.service');
 const habitResetJob = require('./controllers/scheduler');
 // Configure dotenv with explicit path to root of monorepo
-require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const Message = require('./models/messages.model');
 const authRoutes = require('./routes/auth.routes');
 const configurePassport = require('./config/passport');

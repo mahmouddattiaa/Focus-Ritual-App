@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {/* Logo and Description */}
           <div>
-            <img src="/images/logo.png" alt="Focus Ritual Logo" className="h-8 mb-3" /> {/* Updated path for Vite public assets */}
+            <img src="/images/logo-v2.png" alt="Focus Ritual Logo" className="h-8 mb-3 rounded-full" /> {/* Updated path for Vite public assets */}
             <p className="text-gray-400 text-xs leading-relaxed max-w-xs">
               Elevate your focus, achieve your goals. Focus Ritual is your dedicated space for deep work and productivity.
             </p>

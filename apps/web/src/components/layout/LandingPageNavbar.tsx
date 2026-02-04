@@ -29,7 +29,7 @@ const LandingPageNavbar: React.FC = () => {
             }`}>
             <div className="flex items-center">
                 <Link to="/" className="flex items-center space-x-3 group">
-                    <img src="/images/logo.png" alt="Focus Ritual Logo" className="h-10 filter brightness-125 contrast-125 drop-shadow-lg" />
+                    <img src="/images/logo-v2.png" alt="Focus Ritual Logo" className="h-10 rounded-full filter brightness-125 contrast-125 drop-shadow-lg" />
                     <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-green-400 to-emerald hover:text-emerald-300 transition-colors duration-200">
                         Focus Ritual
                     </span>

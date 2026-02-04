@@ -51,9 +51,9 @@ const MemoizedSidebarContent = React.memo(({
     <div className={`flex items-center p-6 border-b border-teal-500/20 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
       <div className="flex items-center gap-3">
         <img
-          src="/images/logo.png"
+          src="/images/logo-v2.png"
           alt="Focus Ritual Logo"
-          className={`transition-all duration-300 hover:rotate-[-3deg] hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] rounded-xl ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'}`}
+          className={`transition-all duration-300 hover:rotate-[-3deg] hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] rounded-full ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'}`}
         />
         <AnimatePresence>
           {!isCollapsed && (
